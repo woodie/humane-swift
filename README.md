@@ -38,15 +38,18 @@ Add as a Swift Package Manager dependency:
 Two options on `TimeFormatter`, both off by default so it matches
 `RelativeDateTimeFormatter` exactly out of the box:
 
-- `includeSeconds` (default `false`): below a minute, collapses to "less
+- `includeSeconds` (default `false`): under 30 seconds, collapses to "less
   than a minute ago"/"in less than a minute" instead of an exact second
   count -- a static render is stale the instant it's produced, so
   second-level precision there is misleading. Named after ActionView's
   `include_seconds`, which defaults the same way.
-- `approximate` (default `false`): prefixes "about"/"in about" on buckets of
-  an hour or larger, the way ActionView's `distance_of_time_in_words` does
-  past that same boundary -- a signal that the bucket itself is a rounded
-  value.
+- `approximate` (default `false`): prefixes "about"/"in about" on the
+  hour-scale buckets (1 hour, and 2..24 hours), the way ActionView's
+  `distance_of_time_in_words` does for those same buckets -- a signal that
+  the bucket itself is a rounded value. Matches ActionView's own table
+  exactly (down to its 44:30/89:30 rounding cutoffs), through the "1 day"
+  bucket; week/month/year buckets are out of scope. See
+  [humane-ruby issue #1](https://github.com/woodie/humane-ruby/issues/1).
 
 ## Scope
 

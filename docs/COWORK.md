@@ -8,11 +8,15 @@ style, test structure) are in `~/workspace/woodie/docs/COWORK.md`.
 
 The Swift sibling to `humane` (Go) and `humane-ruby`: `Humane.SizeFormatter` and
 `Humane.TimeFormatter`, matching their API shape (a configurable formatter type with a
-`string`-flavored method, not a bare helper function). Unlike the other two, there's no
-math to port -- `ByteCountFormatter`/`RelativeDateTimeFormatter` are already exactly
-right, since they're the reference implementation `humane`/`humane-ruby` were built to
-match in the first place. This library is a thin wrapper, plus two small additive
-options Foundation doesn't provide on its own.
+`string`-flavored method, not a bare helper function). `SizeFormatter` has no math to
+port -- `ByteCountFormatter` is already exactly right, since it's the reference
+implementation `humane`/`humane-ruby` were built to match in the first place, and stays
+a thin wrapper. `TimeFormatter` no longer is: once `approximate` needed to match
+ActionView's exact bucket table (44:30/89:30/etc. cutoffs, see `humane-ruby` issue #1),
+`RelativeDateTimeFormatter`'s own rounding stopped being close enough to build on top of
+-- it doesn't jump buckets that early. `TimeFormatter` now computes `distanceInMinutes`
+and buckets by hand, the same way `humane`/`humane-ruby` do, rather than delegating to
+Foundation and string-surgering the result.
 
 ## Why this exists
 
@@ -74,22 +78,28 @@ flip) is deliberately deferred until after this package ships -- see "Next up".
   `RelativeDateTimeFormatter`'s raw output exactly -- per "By default, humane matches
   the Swift implementation," this type should require zero configuration to behave
   identically to calling Foundation directly.
-- **`approximate`'s hour threshold**: "about" only kicks in once the bucket itself is
-  coarse enough that the rounding it's hiding stops being visible -- nobody reads "3
-  hours ago" as more precise than it is, but "47 minutes ago" reads as exact. An hour
-  is where that stops holding. Day-and-larger buckets inherit "about" for free once
-  their underlying delta crosses the hour mark; there's no separate day-level
-  threshold.
-- **Prefix insertion is string surgery, not reimplemented bucketing**: `approximate`
-  prepends "about "/"in about " onto whatever `RelativeDateTimeFormatter` already
-  returned, rather than recomputing the bucket text. English-only, and relies on
-  Foundation's known `"in X"` prefix shape for future-dated output -- noted inline at
-  the one spot it matters.
-- **Zero-delta is forced past-tense**: `RelativeDateTimeFormatter` itself calls an
-  exact-zero delta `"in 0 seconds"` (future-tense) rather than `"0 seconds ago"` --
-  discovered via a real `swift test` failure, not by inspection. `humane`/`humane-ruby`
-  both treat zero as non-future by construction (`seconds.negative?` is false at zero),
-  so this type corrects Foundation's own zero-delta phrasing to match that convention
+- **`approximate`'s buckets, revised**: originally "about" kicked in on any bucket of an
+  hour or more (day-and-larger buckets inherited it for free once the delta crossed the
+  hour mark). Revised to match ActionView's `distance_of_time_in_words` table exactly
+  instead: "about" only decorates the 1-hour and 2..24-hour buckets, not the day bucket
+  -- ActionView's own table has no "about 1 day". See `humane-ruby` issue #1 and
+  `TimeFormatter.swift`'s doc comment for the full table (truncated at "1 day";
+  week/month/year buckets are out of scope).
+- **Bucketing is hand-rolled, not `RelativeDateTimeFormatter`-derived**: originally
+  `approximate` did string surgery -- prepending "about "/"in about " onto whatever
+  `RelativeDateTimeFormatter` returned, rather than recomputing the bucket text.
+  That stopped working once `approximate` needed ActionView's specific early cutoffs
+  (44:30 for "about 1 hour", 89:30 for "about 2 hours") -- Foundation's own rounding
+  doesn't jump buckets that early, so there was no "about"-eligible bucket text to
+  surgery onto in the first place. `TimeFormatter` now computes `distanceInMinutes`
+  and switches on it directly, the same shape `humane`/`humane-ruby` use, dropping the
+  `RelativeDateTimeFormatter` dependency for time formatting entirely.
+- **Zero-delta, no longer a Foundation workaround**: `RelativeDateTimeFormatter` used to
+  call an exact-zero delta `"in 0 seconds"` (future-tense) rather than `"0 seconds
+  ago"` -- discovered via a real `swift test` failure, not by inspection, and corrected
+  with an inline patch. Now that bucketing is hand-rolled and `future` is computed
+  directly (`date > referenceDate`, false when equal), zero is past-tense by
+  construction, matching `humane`/`humane-ruby`'s own approach
   rather than exposing the inconsistency.
 
 ## Sandbox limitation
@@ -141,6 +151,17 @@ confirmed via a real `make build`/`make test` resolving the published package fr
 GitHub -- 46/46 pass, same as the `path:` version. This library's adoption story is
 complete: scaffolded, tested, adopted by `zouk`, tagged, released, and re-confirmed
 against the real published artifact.
+
+`TimeFormatter` reworked to match ActionView's `distance_of_time_in_words` bucket table
+exactly (see `humane-ruby` issue #1), through the "1 day" row -- `include_seconds`'s
+collapse cutoff moved from 60s to 30s, and `approximate` narrowed from "any bucket >= 1
+hour" to exactly the hour-scale buckets (1 hour, 2..24 hours), since ActionView's table
+has no "about" on the day bucket. This required dropping `RelativeDateTimeFormatter` as
+the bucketing source (see "Design decisions" above) -- `TimeFormatter` now computes
+`distanceInMinutes` by hand, the same shape `humane`/`humane-ruby` use, both of which
+picked up the identical table change in the same session. Confirmed for real via
+`swift test` on woodie's Mac -- 35/35 passing, alongside `humane-ruby`'s (35/35) and
+`humane`'s (36/36) identical changes in the same session.
 
 ## Next up
 
