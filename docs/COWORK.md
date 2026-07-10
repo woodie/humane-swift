@@ -105,8 +105,8 @@ zero-delta bug above and several wrong `SizeFormatter` fixture assumptions (see
 `Package.swift` (macOS 13+, matching `zouk`'s own platform target), `Sources/Humane/`
 (`SizeFormatter`, `TimeFormatter`), `Tests/HumaneTests/` (Quick/Nimble specs), README,
 and a GitHub Actions `ci.yml`. Confirmed via `swift test` on real hardware -- 28/28
-passing after two rounds of fixes (see git history: initial scaffold, then a real-run
-fixup commit).
+passing (first run surfaced 5 failures, fixed in a follow-up commit; second run clean).
+Tagged `v0.1.0` locally; not yet pushed.
 
 That real run surfaced a genuine finding: `ByteCountFormatter`'s actual output diverges
 from `humane`/`humane-ruby`'s hand-rolled 2-significant-digit algorithm in cases beyond
@@ -127,7 +127,8 @@ depend on this package yet.
 
 ## Next up
 
-1. Tag and push `v0.1.0` (build/test already confirmed).
+1. Push `main` and the `v0.1.0` tag (build/test already confirmed, tag already cut
+   locally).
 2. Point `zouk`'s `Package.swift` at this repo (a branch/local `path:` dependency
    first, then a version pin once tagged -- the same bridge `humane-ruby` used into
    `scandalous`) and replace `ScanEntry`'s hand-rolled `humanSize`/`timeAgo` with calls
