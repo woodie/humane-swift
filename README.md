@@ -1,5 +1,6 @@
 # humane-swift
 
+[![Swift](https://img.shields.io/badge/swift-5.9%2B-F05138.svg)](Package.swift)
 [![CI](https://github.com/woodie/humane-swift/actions/workflows/ci.yml/badge.svg)](https://github.com/woodie/humane-swift/actions/workflows/ci.yml)
 [![Release](https://img.shields.io/github/v/release/woodie/humane-swift.svg)](https://github.com/woodie/humane-swift/releases/latest)
 [![License](https://img.shields.io/github/license/woodie/humane-swift.svg)](LICENSE)
