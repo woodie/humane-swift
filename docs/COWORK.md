@@ -120,29 +120,36 @@ math isn't exhaustively Foundation-accurate outside their originally-checked ran
 which undercuts their README's "corresponding functions in Swift will have consistent
 output" claim for these specific shapes of input.
 
-`zouk`'s `ScanEntry.timeAgo` already has its own hand-rolled version of both
-`includeSeconds`-equivalent and `approximate`-equivalent behavior (with the 30-second
-threshold noted above under "Why this exists") -- it hasn't been switched over to
-depend on this package yet.
+`zouk` has switched over: `Package.swift` depends on this repo via a local
+`.package(path: "../humane-swift")` (deliberately not a version pin yet, since
+`v0.1.0` isn't pushed), and `ScanEntry.humanSize`/`timeAgo(relativeTo:)` now call
+`Humane.SizeFormatter`/`Humane.TimeFormatter(approximate: true)` instead of their old
+hand-rolled versions -- see `zouk/docs/COWORK.md`, "adopted humane-swift" for that
+side. Made by inspection only, not yet confirmed via `make test` on real hardware.
+Pushing this repo's `v0.1.0` tag and writing release notes is deliberately being held
+until that confirmation lands, so the tagged release reflects something proven in a
+real consumer, not just this repo's own isolated specs.
 
 ## Next up
 
-1. Push `main` and the `v0.1.0` tag (build/test already confirmed, tag already cut
-   locally).
-2. Point `zouk`'s `Package.swift` at this repo (a branch/local `path:` dependency
-   first, then a version pin once tagged -- the same bridge `humane-ruby` used into
-   `scandalous`) and replace `ScanEntry`'s hand-rolled `humanSize`/`timeAgo` with calls
-   into `Humane.SizeFormatter`/`Humane.TimeFormatter(approximate: true)`, fixing the
-   30-vs-60-second drift in the process.
-3. Circle back to `humane` and `humane-ruby`: rename `CollapseMinute`/
+1. Confirm the `zouk` integration via `make build`/`make test` on real hardware --
+   this also confirms the 30-vs-60-second drift fix, since that's a direct
+   consequence of `ScanEntry` now going through `Humane.TimeFormatter` instead of
+   its old hand-rolled clamp.
+2. Push `main` and the `v0.1.0` tag (build/test already confirmed here; tag already
+   cut locally), then write `v0.1.0` release notes covering `SizeFormatter`,
+   `TimeFormatter`, `includeSeconds`, and `approximate`.
+3. Once pushed, switch `zouk`'s dependency from `path:` to a `from: "0.1.0"` version
+   pin.
+4. Circle back to `humane` and `humane-ruby`: rename `CollapseMinute`/
    `collapse_minute` to `IncludeSeconds`/`include_seconds` (breaking -- polarity
    inverts, needs a version bump and an upgrade note the way the `v0.2.0` wording
    change got one in both `docs/COWORK.md`), and decide whether `approximate` gets
    backported to those two as well.
-4. Decide whether `humane`/`humane-ruby`'s `SizeFormatter` math is worth correcting
+5. Decide whether `humane`/`humane-ruby`'s `SizeFormatter` math is worth correcting
    toward exact `ByteCountFormatter` parity for the zero/byte-scale/GB-scale cases
    found above, or whether "2 significant digits, close enough" is an accepted,
    documented limitation -- currently neither repo's docs mention the gap.
-5. Once (3) lands, `humane-ruby#1` ("Provide ActionView compatibility mode") can be
+6. Once (4) lands, `humane-ruby#1` ("Provide ActionView compatibility mode") can be
    closed with a pointer to `approximate` as the actual answer to what it was asking
    for.
