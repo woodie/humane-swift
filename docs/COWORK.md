@@ -133,16 +133,18 @@ server -- woodie deliberately scoped this round to the automated suite, matching
 most changes, reserving a live `make run` pass for cases that specifically call for
 it.
 
+`v0.1.0` is tagged, pushed, and released:
+[github.com/woodie/humane-swift/releases/tag/v0.1.0](https://github.com/woodie/humane-swift/releases/tag/v0.1.0)
+(via `gh release create v0.1.0 --title "v0.1.0" --notes-file docs/releases/v0.1.0.md`).
+`zouk`'s `Package.swift` is pinned to it (`from: "0.1.0"`, no more local `path:`) --
+not yet confirmed via `make test` against the real published package rather than the
+local checkout that was actually tested.
+
 ## Next up
 
-1. Push `main` and the `v0.1.0` tag from woodie's own machine (`git push origin main
-   --tags`) -- this sandbox has no real GitHub credentials, confirmed when `git
-   ls-remote` failed host-key verification earlier, so the push has to happen outside
-   this session. Build/test confirmed here and in `zouk`; tag already cut locally.
-   `docs/releases/v0.1.0.md` has the release notes to paste into the GitHub Release.
-2. Once pushed, switch `zouk`'s dependency from `path:` to a `from: "0.1.0"` version
-   pin.
-3. Circle back to `humane` and `humane-ruby`: rename `CollapseMinute`/
+1. Confirm `zouk` still passes `make build`/`make test` now that it resolves
+   `humane-swift` from GitHub instead of `path:`.
+2. Circle back to `humane` and `humane-ruby`: rename `CollapseMinute`/
    `collapse_minute` to `IncludeSeconds`/`include_seconds` (breaking -- polarity
    inverts, needs a version bump and an upgrade note the way the `v0.2.0` wording
    change got one in both `docs/COWORK.md`), and decide whether `approximate` gets
