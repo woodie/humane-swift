@@ -85,24 +85,40 @@ flip) is deliberately deferred until after this package ships -- see "Next up".
   returned, rather than recomputing the bucket text. English-only, and relies on
   Foundation's known `"in X"` prefix shape for future-dated output -- noted inline at
   the one spot it matters.
+- **Zero-delta is forced past-tense**: `RelativeDateTimeFormatter` itself calls an
+  exact-zero delta `"in 0 seconds"` (future-tense) rather than `"0 seconds ago"` --
+  discovered via a real `swift test` failure, not by inspection. `humane`/`humane-ruby`
+  both treat zero as non-future by construction (`seconds.negative?` is false at zero),
+  so this type corrects Foundation's own zero-delta phrasing to match that convention
+  rather than exposing the inconsistency.
 
 ## Sandbox limitation
 
 No Swift toolchain in the Cowork sandbox (confirmed: no `swift` binary) -- same
-situation as `humane`'s missing Go toolchain. Code here was written by inspection;
-still needs `swift build`/`swift test` run for real on a Mac before it's trusted,
-including the `Quick`/`Nimble` specs (mirroring `zouk`'s own test setup and the
-describe/context/it structure documented in the cross-project conventions doc).
+situation as `humane`'s missing Go toolchain. Code here was written by inspection,
+then confirmed for real via `swift test` on woodie's Mac -- that run caught the
+zero-delta bug above and several wrong `SizeFormatter` fixture assumptions (see
+"Current state"), exactly the category of mistake this workflow exists to catch.
 
 ## Current state
 
 `Package.swift` (macOS 13+, matching `zouk`'s own platform target), `Sources/Humane/`
-(`SizeFormatter`, `TimeFormatter`), `Tests/HumaneTests/` (Quick/Nimble specs -- the
-`SizeFormatter` fixtures are the same byte counts already validated against real
-`ByteCountFormatter` output in `humane-ruby`'s spec suite; the `TimeFormatter` fixtures
-share the same base timestamp and deltas as `humane-ruby`'s spec for cross-language
-parity), README, and a GitHub Actions `ci.yml`. Not yet built, tested, tagged, or
-published.
+(`SizeFormatter`, `TimeFormatter`), `Tests/HumaneTests/` (Quick/Nimble specs), README,
+and a GitHub Actions `ci.yml`. Confirmed via `swift test` on real hardware -- 28/28
+passing after two rounds of fixes (see git history: initial scaffold, then a real-run
+fixup commit).
+
+That real run surfaced a genuine finding: `ByteCountFormatter`'s actual output diverges
+from `humane`/`humane-ruby`'s hand-rolled 2-significant-digit algorithm in cases beyond
+the two fixtures (`225_935`, `500_000`) their `docs/COWORK.md` explicitly says were
+cross-checked against real hardware. Specifically: `0` bytes formats as `"Zero KB"`,
+not `"0 B"`; byte-scale values spell out `"bytes"`, not `"B"` (`"7 bytes"`, not `"7
+B"`); and GB-scale values can carry 2 decimal places, not 1 (`"5.24 GB"`, not `"5.2
+GB"`, for `5_240_000_000`). `SizeFormatter` here is a direct passthrough to
+`ByteCountFormatter`, so it's authoritative on these; `humane`/`humane-ruby`'s own
+math isn't exhaustively Foundation-accurate outside their originally-checked range,
+which undercuts their README's "corresponding functions in Swift will have consistent
+output" claim for these specific shapes of input.
 
 `zouk`'s `ScanEntry.timeAgo` already has its own hand-rolled version of both
 `includeSeconds`-equivalent and `approximate`-equivalent behavior (with the 30-second
@@ -111,7 +127,7 @@ depend on this package yet.
 
 ## Next up
 
-1. Confirm on real hardware (`swift build`, `swift test`), tag and push `v0.1.0`.
+1. Tag and push `v0.1.0` (build/test already confirmed).
 2. Point `zouk`'s `Package.swift` at this repo (a branch/local `path:` dependency
    first, then a version pin once tagged -- the same bridge `humane-ruby` used into
    `scandalous`) and replace `ScanEntry`'s hand-rolled `humanSize`/`timeAgo` with calls
@@ -122,6 +138,10 @@ depend on this package yet.
    inverts, needs a version bump and an upgrade note the way the `v0.2.0` wording
    change got one in both `docs/COWORK.md`), and decide whether `approximate` gets
    backported to those two as well.
-4. Once (3) lands, `humane-ruby#1` ("Provide ActionView compatibility mode") can be
+4. Decide whether `humane`/`humane-ruby`'s `SizeFormatter` math is worth correcting
+   toward exact `ByteCountFormatter` parity for the zero/byte-scale/GB-scale cases
+   found above, or whether "2 significant digits, close enough" is an accepted,
+   documented limitation -- currently neither repo's docs mention the gap.
+5. Once (3) lands, `humane-ruby#1` ("Provide ActionView compatibility mode") can be
    closed with a pointer to `approximate` as the actual answer to what it was asking
    for.

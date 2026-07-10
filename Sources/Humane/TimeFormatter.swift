@@ -23,7 +23,13 @@ public struct TimeFormatter {
 
         let formatter = RelativeDateTimeFormatter()
         formatter.unitsStyle = .full
-        let text = formatter.localizedString(for: date, relativeTo: referenceDate)
+        var text = formatter.localizedString(for: date, relativeTo: referenceDate)
+
+        // RelativeDateTimeFormatter calls an exact-zero delta "in 0 seconds"; this library treats zero as past-tense.
+        if seconds == 0, text.hasPrefix("in ") {
+            text = text.dropFirst(3) + " ago"
+        }
+
         guard approximate, seconds >= 3600 else { return text }
 
         // English-only string surgery -- RelativeDateTimeFormatter has no "approximate" option to ask for directly.

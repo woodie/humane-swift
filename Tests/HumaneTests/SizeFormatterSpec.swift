@@ -11,20 +11,20 @@ final class SizeFormatterSpec: QuickSpec {
 
             describe("#string(fromByteCount:)") {
                 context("with 0 bytes") {
-                    it("formats as 0 B") {
-                        expect(formatter.string(fromByteCount: 0)).to(equal("0 B"))
+                    it("formats as Zero KB, ByteCountFormatter's own zero phrasing") {
+                        expect(formatter.string(fromByteCount: 0)).to(equal("Zero KB"))
                     }
                 }
 
                 context("with a small byte count") {
-                    it("formats with no rounding") {
-                        expect(formatter.string(fromByteCount: 7)).to(equal("7 B"))
+                    it("spells out bytes, no rounding") {
+                        expect(formatter.string(fromByteCount: 7)).to(equal("7 bytes"))
                     }
                 }
 
                 context("with 999 bytes") {
                     it("stays in bytes, just under the 1 KB threshold") {
-                        expect(formatter.string(fromByteCount: 999)).to(equal("999 B"))
+                        expect(formatter.string(fromByteCount: 999)).to(equal("999 bytes"))
                     }
                 }
 
@@ -53,8 +53,8 @@ final class SizeFormatterSpec: QuickSpec {
                 }
 
                 context("with a gigabyte-scale value") {
-                    it("rounds to 2 significant digits") {
-                        expect(formatter.string(fromByteCount: 5_240_000_000)).to(equal("5.2 GB"))
+                    it("keeps 2 decimal places at GB scale, unlike humane-ruby's 1-decimal rule") {
+                        expect(formatter.string(fromByteCount: 5_240_000_000)).to(equal("5.24 GB"))
                     }
                 }
             }
