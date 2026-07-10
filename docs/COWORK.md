@@ -136,23 +136,23 @@ it.
 `v0.1.0` is tagged, pushed, and released:
 [github.com/woodie/humane-swift/releases/tag/v0.1.0](https://github.com/woodie/humane-swift/releases/tag/v0.1.0)
 (via `gh release create v0.1.0 --title "v0.1.0" --notes-file docs/releases/v0.1.0.md`).
-`zouk`'s `Package.swift` is pinned to it (`from: "0.1.0"`, no more local `path:`) --
-not yet confirmed via `make test` against the real published package rather than the
-local checkout that was actually tested.
+`zouk`'s `Package.swift` is pinned to it (`from: "0.1.0"`, no more local `path:`),
+confirmed via a real `make build`/`make test` resolving the published package from
+GitHub -- 46/46 pass, same as the `path:` version. This library's adoption story is
+complete: scaffolded, tested, adopted by `zouk`, tagged, released, and re-confirmed
+against the real published artifact.
 
 ## Next up
 
-1. Confirm `zouk` still passes `make build`/`make test` now that it resolves
-   `humane-swift` from GitHub instead of `path:`.
-2. Circle back to `humane` and `humane-ruby`: rename `CollapseMinute`/
+1. Circle back to `humane` and `humane-ruby`: rename `CollapseMinute`/
    `collapse_minute` to `IncludeSeconds`/`include_seconds` (breaking -- polarity
    inverts, needs a version bump and an upgrade note the way the `v0.2.0` wording
    change got one in both `docs/COWORK.md`), and decide whether `approximate` gets
    backported to those two as well.
-4. Decide whether `humane`/`humane-ruby`'s `SizeFormatter` math is worth correcting
+2. Decide whether `humane`/`humane-ruby`'s `SizeFormatter` math is worth correcting
    toward exact `ByteCountFormatter` parity for the zero/byte-scale/GB-scale cases
    found above, or whether "2 significant digits, close enough" is an accepted,
    documented limitation -- currently neither repo's docs mention the gap.
-5. Once (3) lands, `humane-ruby#1` ("Provide ActionView compatibility mode") can be
+3. Once (1) lands, `humane-ruby#1` ("Provide ActionView compatibility mode") can be
    closed with a pointer to `approximate` as the actual answer to what it was asking
    for.
