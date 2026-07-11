@@ -115,6 +115,17 @@ final class TimeFormatterSpec: QuickSpec {
                 }
             }
 
+            describe("#string(_:_:)") {
+                it("is a positional alias for string(for:relativeTo:), same output") {
+                    let formatter = TimeFormatter()
+                    let when_ = base.addingTimeInterval(-180)
+
+                    expect(formatter.string(when_, base))
+                        .to(equal(formatter.string(for: when_, relativeTo: base)))
+                    expect(formatter.string(when_, base)).to(equal("3 minutes ago"))
+                }
+            }
+
             describe("#string(for:relativeTo:) with includeSeconds: true") {
                 var formatter: TimeFormatter!
                 beforeEach { formatter = TimeFormatter(includeSeconds: true) }

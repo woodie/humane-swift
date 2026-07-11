@@ -78,3 +78,11 @@ without the one genuine naming mismatch between them (see `humane`'s and
 `humane-ruby`'s own `docs/COWORK.md` "Naming" sections for the full
 rationale). Implemented as a one-line forward to `string(for:relativeTo:)`,
 not a separate implementation.
+
+### `TimeFormatter.string(_:_:)`
+Positional alias, no argument labels at all -- for callers who'd rather skip
+labels entirely, matching `humane` (Go), which has no argument labels to
+begin with (Go's calling convention is positional-only, full stop). Also a
+one-line forward to `string(for:relativeTo:)`. Added alongside `at:relativeTo:`
+in the same cross-language naming pass; `humane-ruby`'s `#string` picked up
+the equivalent positional-or-keyword support -- see its own `docs/COMMENTS.md`.

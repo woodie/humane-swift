@@ -59,6 +59,11 @@ public struct TimeFormatter {
         string(for: date, relativeTo: referenceDate)
     }
 
+    /// Positional alias for `string(for:relativeTo:)`, for callers who'd rather skip argument labels entirely -- matches `humane` (Go), which has no labels at all. See docs/COMMENTS.md.
+    public func string(_ date: Date, _ referenceDate: Date) -> String {
+        string(for: date, relativeTo: referenceDate)
+    }
+
     private func wrap(_ text: String, future: Bool) -> String {
         future ? "in " + text : text + " ago"
     }

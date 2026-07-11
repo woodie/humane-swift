@@ -180,6 +180,12 @@ confirmed via a real `swift test`** -- no Swift toolchain in this sandbox (see "
 limitation"). Needs a real run on woodie's Mac before this is considered done, same as
 every other change here.
 
+`TimeFormatter` also gained `string(_:_:)`, a fully positional alias (no argument
+labels), matching `humane` (Go)'s calling convention, which has no labels at all.
+Same session, same one-line-forward shape, same "not yet confirmed" caveat.
+`humane-ruby`'s `#string` picked up equivalent positional-or-keyword support in the
+same pass -- see `humane`'s and `humane-ruby`'s own `docs/COWORK.md`.
+
 ## Next up
 
 1. Circle back to `humane` and `humane-ruby`: rename `CollapseMinute`/
