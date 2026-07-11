@@ -64,6 +64,12 @@ Two options on `TimeFormatter`, both off by default so it matches
   bucket; week/month/year buckets are out of scope. See
   [humane-ruby issue #1](https://github.com/woodie/humane-ruby/issues/1).
 
+```swift
+Humane.TimeFormatter(approximate: true)
+    .string(for: Date().addingTimeInterval(-15 * 3600), relativeTo: Date())
+// "about 15 hours ago"
+```
+
 ## Scope
 
 Finder's `.file` byte-count style, and a numeric (non-calendar-aware)

@@ -191,6 +191,14 @@ same pass -- see `humane`'s and `humane-ruby`'s own `docs/COWORK.md`.
 the one method still keyword-only after `TimeFormatter` got its positional aliases.
 Same one-line-forward shape, same "not yet confirmed via real `swift test`" caveat.
 
+README gained the `approximate: true` example (`"about 15 hours ago"`) that
+`humane`'s and `humane-ruby`'s READMEs already had -- this README's "Beyond
+Foundation's defaults" section listed the option but never showed it actually
+triggering "about". 15 hours matches the other two languages' existing
+example distance (already covered by real specs here); the top-of-README
+3-minute example is untouched -- it's correct as-is, since ActionView's own
+table has no "about" below the hour bucket.
+
 ## Next up
 
 1. Circle back to `humane` and `humane-ruby`: rename `CollapseMinute`/
