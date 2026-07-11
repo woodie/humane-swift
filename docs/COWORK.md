@@ -173,46 +173,42 @@ picked up the identical table change in the same session. Confirmed for real via
 `swift test` on woodie's Mac -- 35/35 passing, alongside `humane-ruby`'s (35/35) and
 `humane`'s (36/36) identical changes in the same session.
 
-`TimeFormatter` gained `string(at:relativeTo:)`, an additive alias for
-`string(for:relativeTo:)` -- see "Naming" above. One-line forward, no behavior change,
-no existing call sites affected. Written by inspection in this session; **not yet
-confirmed via a real `swift test`** -- no Swift toolchain in this sandbox (see "Sandbox
-limitation"). Needs a real run on woodie's Mac before this is considered done, same as
-every other change here.
+`v0.3.0`: `TimeFormatter` gained `string(at:relativeTo:)` (additive alias for
+`string(for:relativeTo:)` -- see "Naming" above) and `string(_:_:)` (fully
+positional, no argument labels, matching `humane` (Go)'s label-free calling
+convention). `SizeFormatter` gained the equivalent `string(_:)` positional
+alias once a mocked-up three-language comparison surfaced it as the one
+method still keyword-only after `TimeFormatter` got its aliases. Every
+addition is a one-line forward to the existing implementation, not a
+separate one. `humane-ruby`'s `#string` on both formatters picked up
+equivalent positional-or-keyword support in the same session -- see
+`docs/releases/v0.3.0.md`.
 
-`TimeFormatter` also gained `string(_:_:)`, a fully positional alias (no argument
-labels), matching `humane` (Go)'s calling convention, which has no labels at all.
-Same session, same one-line-forward shape, same "not yet confirmed" caveat.
-`humane-ruby`'s `#string` picked up equivalent positional-or-keyword support in the
-same pass -- see `humane`'s and `humane-ruby`'s own `docs/COWORK.md`.
+README also gained the `approximate: true` example (`"about 15 hours ago"`)
+that `humane`'s and `humane-ruby`'s READMEs already had -- this README's
+"Beyond Foundation's defaults" section listed the option but never showed it
+actually triggering "about". 15 hours matches the other two languages'
+existing example distance (already covered by real specs here); the
+top-of-README 3-minute example is untouched -- it's correct as-is, since
+ActionView's own table has no "about" below the hour bucket. The README also
+now states explicitly the principle that's been guiding all of the above:
+Foundation is the baseline every default matches exactly in all three
+languages; ActionView's vocabulary is a layer on top of that baseline,
+opt-in, never a replacement for it.
 
-`SizeFormatter` gained the same treatment: `string(_:)` as a positional alias for
-`string(fromByteCount:)`, once a mocked-up three-language comparison surfaced it as
-the one method still keyword-only after `TimeFormatter` got its positional aliases.
-Same one-line-forward shape, same "not yet confirmed via real `swift test`" caveat.
-
-README gained the `approximate: true` example (`"about 15 hours ago"`) that
-`humane`'s and `humane-ruby`'s READMEs already had -- this README's "Beyond
-Foundation's defaults" section listed the option but never showed it actually
-triggering "about". 15 hours matches the other two languages' existing
-example distance (already covered by real specs here); the top-of-README
-3-minute example is untouched -- it's correct as-is, since ActionView's own
-table has no "about" below the hour bucket.
-
-The `for:`/`at:`/`_:_:` naming pass, keeping `for:` as primary rather than
-switching to `at:`, and `includeSeconds`/`approximate` defaulting `false` are
-all the same underlying call: Foundation is the baseline every default
-matches exactly in all three languages; ActionView's vocabulary is a layer
-on top of that baseline, opt-in, never a replacement for it. Made explicit
-in the README's "Beyond Foundation's defaults" section this session.
+**Tagged locally as `v0.3.0`; not yet pushed or released.** Written by
+inspection -- **not yet confirmed via a real `swift test`** -- no Swift
+toolchain in this sandbox (see "Sandbox limitation"). A real `swift test`
+run, then `git push --tags` and `gh release create v0.3.0 --title "v0.3.0"
+--notes-file docs/releases/v0.3.0.md`, still need to happen on woodie's Mac
+before this is truly done, same as every other release here.
 
 ## Next up
 
-1. Circle back to `humane` and `humane-ruby`: rename `CollapseMinute`/
-   `collapse_minute` to `IncludeSeconds`/`include_seconds` (breaking -- polarity
-   inverts, needs a version bump and an upgrade note the way the `v0.2.0` wording
-   change got one in both `docs/COWORK.md`), and decide whether `approximate` gets
-   backported to those two as well.
+1. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in
+   `humane`/`humane-ruby` (this repo's own `v0.1.0` motivation for the
+   rename) is done -- both shipped it in their own `v0.3.0`s. `approximate`
+   backported to both as well, in their `v0.4.0`s. Nothing left open here.
 2. Decide whether `humane`/`humane-ruby`'s `SizeFormatter` math is worth correcting
    toward exact `ByteCountFormatter` parity for the zero/byte-scale/GB-scale cases
    found above, or whether "2 significant digits, close enough" is an accepted,
