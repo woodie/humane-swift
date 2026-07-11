@@ -29,9 +29,14 @@ output with a Swift one, not because Foundation needs correcting.
 `string(for:relativeTo:)` -- `at` is the parameter name shared with `humane`
 (Go) and `humane-ruby`, where `for` isn't available as a keyword argument.
 Use whichever reads more naturally; `for:` is the primary spelling here.
-A fully positional `string(_:_:)` is also available for callers who'd
-rather skip argument labels entirely, matching `humane` (Go)'s label-free
-calling convention.
+Both `SizeFormatter` and `TimeFormatter` also accept fully positional calls
+(`string(_:)` / `string(_:_:)`) for callers who'd rather skip argument
+labels entirely, matching `humane` (Go)'s label-free calling convention:
+
+```swift
+Humane.SizeFormatter().string(225_935) // "226 KB"
+timeFormatter.string(Date().addingTimeInterval(-180), Date()) // "3 minutes ago"
+```
 
 ## Install
 

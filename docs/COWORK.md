@@ -186,6 +186,11 @@ Same session, same one-line-forward shape, same "not yet confirmed" caveat.
 `humane-ruby`'s `#string` picked up equivalent positional-or-keyword support in the
 same pass -- see `humane`'s and `humane-ruby`'s own `docs/COWORK.md`.
 
+`SizeFormatter` gained the same treatment: `string(_:)` as a positional alias for
+`string(fromByteCount:)`, once a mocked-up three-language comparison surfaced it as
+the one method still keyword-only after `TimeFormatter` got its positional aliases.
+Same one-line-forward shape, same "not yet confirmed via real `swift test`" caveat.
+
 ## Next up
 
 1. Circle back to `humane` and `humane-ruby`: rename `CollapseMinute`/

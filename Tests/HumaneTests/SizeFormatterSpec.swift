@@ -9,6 +9,13 @@ final class SizeFormatterSpec: QuickSpec {
             var formatter: SizeFormatter!
             beforeEach { formatter = SizeFormatter() }
 
+            describe("#string(_:)") {
+                it("is a positional alias for string(fromByteCount:), same output") {
+                    expect(formatter.string(225_935)).to(equal(formatter.string(fromByteCount: 225_935)))
+                    expect(formatter.string(225_935)).to(equal("226 KB"))
+                }
+            }
+
             describe("#string(fromByteCount:)") {
                 context("with 0 bytes") {
                     it("formats as Zero KB, ByteCountFormatter's own zero phrasing") {

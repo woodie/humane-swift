@@ -7,6 +7,15 @@ one short line at any given spot -- anything longer that would previously
 have been a doc comment lives here instead. See `humane`/`humane-ruby`'s
 own `docs/COMMENTS.md` for the pattern this follows.
 
+## Sources/Humane/SizeFormatter.swift
+
+### `SizeFormatter.string(_:)`
+Positional alias for `string(fromByteCount:)`, matching `humane` (Go)'s
+label-free calling convention -- same reasoning and same session as
+`TimeFormatter.string(_:_:)` below. One-line forward, no separate
+implementation. `humane-ruby`'s `SizeFormatter#string` picked up the
+equivalent positional-or-keyword support in the same pass.
+
 ## Sources/Humane/TimeFormatter.swift
 
 ### `TimeFormatter.includeSeconds`
