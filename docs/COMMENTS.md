@@ -7,6 +7,27 @@ one short line at any given spot -- anything longer that would previously
 have been a doc comment lives here instead. See `humane`/`humane-ruby`'s
 own `docs/COMMENTS.md` for the pattern this follows.
 
+## Tests/HumaneTests/TimeFormatterSpec.swift
+
+### Top-level structure
+Split into multiple sibling top-level `describe` calls instead of one
+`describe("TimeFormatter") { ... }` wrapping everything, after CI started
+failing with `error: the compiler is unable to type-check this expression
+in reasonable time; try breaking up the expression into distinct
+sub-expressions` pointed at the outer describe's opening line. Confirmed via
+the real GitHub Actions log (`swift build -v`/`swift test -v` on
+`macos-14`) -- CI had been red since the `v0.2.0` commit (the one that added
+the boundary-table `describe`), not something introduced by this session's
+additions, though the two new alias describes likely pushed it further
+over. Each top-level `describe` now repeats its own `base`/`beforeEach`
+since Quick doesn't share state across sibling top-level describes -- a
+small amount of duplication traded for the compiler actually being able to
+type-check each block independently. `ci.yml` also gained
+`-Xswiftc -solver-expression-time-limit=600` on both `swift build`/`swift
+test` as a margin of safety, since this couldn't be compiled or confirmed
+in the Cowork sandbox (no Swift toolchain) -- the split is the real fix,
+the flag is a hedge in case some individual block is still borderline.
+
 ## Sources/Humane/SizeFormatter.swift
 
 ### `SizeFormatter.string(_:)`

@@ -203,16 +203,36 @@ case added this session. Tagged, pushed, and **released**:
 (via `gh release create v0.3.0 --title "v0.3.0" --notes-file
 docs/releases/v0.3.0.md`).
 
+**CI found broken separately from the local `swift test` pass above**:
+`ci.yml` (`swift build`/`swift test` on `macos-14`) has been red since the
+`v0.2.0` commit -- confirmed via the actual GitHub Actions log woodie
+pasted in, `error: the compiler is unable to type-check this expression in
+reasonable time`, pointed at `TimeFormatterSpec.swift`'s single outer
+`describe("TimeFormatter") { ... }` wrapping everything. Not a real test
+failure and not something introduced this session (`v0.2.0`'s own CI run
+is red too) -- a local `swift test` on a fast Mac can still pass while the
+CI runner's type checker times out on the same giant nested-closure
+expression. Fixed by splitting `TimeFormatterSpec` into multiple sibling
+top-level `describe`s -- see `docs/COMMENTS.md`. `ci.yml` also gained
+`-Xswiftc -solver-expression-time-limit=600` as a margin of safety.
+**Unconfirmed** -- written and reasoned about by inspection only, no Swift
+toolchain in this sandbox to compile or run it. Needs a real `swift test`
+and a green CI run on woodie's Mac before this is trusted.
+
 ## Next up
 
-1. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in
+1. Confirm the `TimeFormatterSpec` split actually fixes CI (push and watch
+   the Actions run go green), and confirm `swift test` still passes 38/38
+   locally after the restructuring -- the tests' behavior shouldn't have
+   changed, only their grouping, but that needs a real run to trust.
+2. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in
    `humane`/`humane-ruby` (this repo's own `v0.1.0` motivation for the
    rename) is done -- both shipped it in their own `v0.3.0`s. `approximate`
    backported to both as well, in their `v0.4.0`s. Nothing left open here.
-2. Decide whether `humane`/`humane-ruby`'s `SizeFormatter` math is worth correcting
+3. Decide whether `humane`/`humane-ruby`'s `SizeFormatter` math is worth correcting
    toward exact `ByteCountFormatter` parity for the zero/byte-scale/GB-scale cases
    found above, or whether "2 significant digits, close enough" is an accepted,
    documented limitation -- currently neither repo's docs mention the gap.
-3. Once (1) lands, `humane-ruby#1` ("Provide ActionView compatibility mode") can be
+4. Once (2) lands, `humane-ruby#1` ("Provide ActionView compatibility mode") can be
    closed with a pointer to `approximate` as the actual answer to what it was asking
    for.
