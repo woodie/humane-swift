@@ -229,16 +229,31 @@ describe split is the real fix and doesn't need a compiler-flag hedge that
 can't be verified in this sandbox. `ci.yml` is back to plain `swift build
 -v`/`swift test -v`.
 
-**Still unconfirmed on the actual CI runner** -- the describe split has
-only been confirmed via `swift test` on woodie's Mac so far; a green
-Actions run (the thing that was actually broken) hasn't been observed yet.
+Pushing the flag revert got a second real CI log: the file-level split fixed
+every block except the boundary-table one, which timed out on its own,
+pointed at `describe("...bucket table boundaries")` specifically -- real
+progress (one block, not the whole file), and confirmation that this is
+genuinely a per-expression density problem, not something that clears up on
+its own from regrouping alone. That block's `it`s each packed a `Date`
+computation and two `expect(...).to(equal(...))` calls into one line.
+Fixed by doing what the compiler's own error suggests -- pulling each
+`Date` computation into a type-annotated `let` before the `expect` calls --
+and splitting its two `context`s into their own top-level `describe`s, same
+as the rest of the file. Same 7 `it` cases, same assertions.
+
+**Still unconfirmed on the actual CI runner** -- this second-round fix has
+only been reasoned through by inspection so far (no Swift toolchain in this
+sandbox); needs a real `swift test` and a green Actions run before it's
+trusted, same bar as everything else here. Two real CI logs in a row have
+each caught something a local pass alone wouldn't have.
 
 ## Next up
 
-1. Confirm the `TimeFormatterSpec` split actually fixes CI -- push the
-   flag revert and watch the Actions run go green. `swift test` passing
-   locally (38/38, confirmed) doesn't by itself prove this, per the exact
-   local-vs-CI divergence that caused the original problem.
+1. Confirm the second-round `TimeFormatterSpec` fix (extracted `let`s +
+   the boundary-table block split in two) actually turns CI green -- a
+   third real CI log, this time hopefully clean. `swift test` passing
+   locally doesn't by itself prove this, per the exact local-vs-CI
+   divergence that caused the original problem.
 2. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in
    `humane`/`humane-ruby` (this repo's own `v0.1.0` motivation for the
    rename) is done -- both shipped it in their own `v0.3.0`s. `approximate`

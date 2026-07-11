@@ -34,6 +34,20 @@ confirmed via a real CI log. Removed rather than re-attempted, since it
 couldn't be verified in this sandbox (no Swift toolchain) and the describe
 split above is the real fix on its own merits.
 
+The first round of splitting fixed every block except the boundary-table
+one -- confirmed via a second real CI log, same error, now pointing at
+`describe("...bucket table boundaries")` specifically (down from the whole
+file). That block's `it`s each packed a `Date` computation and two
+`expect(...).to(equal(...))` calls using it into one line
+(`expect(formatter.string(for: base.addingTimeInterval(-(44 * 60 + 29)),
+relativeTo: base)).to(equal("44 minutes ago"))`) -- dense even after the
+file-level split. Fixed by doing what the compiler's own error message
+says: pulling each `Date` computation out into a type-annotated `let`
+before the `expect` calls, plus splitting the block's two contexts
+("without approximate" / "with approximate: true") into their own
+top-level describes rather than nested `context`s under a shared one.
+Same 7 `it` cases (5 + 2), same assertions, same behavior.
+
 ## Sources/Humane/SizeFormatter.swift
 
 ### `SizeFormatter.string(_:)`

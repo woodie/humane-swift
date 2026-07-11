@@ -248,53 +248,70 @@ final class TimeFormatterSpec: QuickSpec {
         // table this approximate-distance behavior ports, truncated at the "1 day" row
         // since month/year buckets are out of scope. Each pair straddles a cutoff second
         // from that table to lock in exactly where the wording flips.
-        describe("TimeFormatter#string at the approximate-distance bucket table boundaries") {
+        describe("TimeFormatter#string at the approximate-distance bucket table boundaries, without approximate") {
             var base: Date!
-            beforeEach { base = ISO8601DateFormatter().date(from: "2026-07-08T12:00:00Z") }
-
-            context("without approximate") {
-                var formatter: TimeFormatter!
-                beforeEach { formatter = TimeFormatter() }
-
-                it("29s stays less than a minute, 30s rounds up to 1 minute") {
-                    expect(formatter.string(for: base.addingTimeInterval(-29), relativeTo: base)).to(equal("less than a minute ago"))
-                    expect(formatter.string(for: base.addingTimeInterval(-30), relativeTo: base)).to(equal("1 minute ago"))
-                }
-
-                it("89s stays 1 minute, 90s rounds up to 2 minutes") {
-                    expect(formatter.string(for: base.addingTimeInterval(-89), relativeTo: base)).to(equal("1 minute ago"))
-                    expect(formatter.string(for: base.addingTimeInterval(-90), relativeTo: base)).to(equal("2 minutes ago"))
-                }
-
-                it("44:29 stays 44 minutes, 44:30 rounds up to 1 hour") {
-                    expect(formatter.string(for: base.addingTimeInterval(-(44 * 60 + 29)), relativeTo: base)).to(equal("44 minutes ago"))
-                    expect(formatter.string(for: base.addingTimeInterval(-(44 * 60 + 30)), relativeTo: base)).to(equal("1 hour ago"))
-                }
-
-                it("89:29 stays 1 hour, 89:30 rounds up to 2 hours") {
-                    expect(formatter.string(for: base.addingTimeInterval(-(89 * 60 + 29)), relativeTo: base)).to(equal("1 hour ago"))
-                    expect(formatter.string(for: base.addingTimeInterval(-(89 * 60 + 30)), relativeTo: base)).to(equal("2 hours ago"))
-                }
-
-                it("23:59:29 stays 24 hours, 23:59:30 rounds up to 1 day") {
-                    expect(formatter.string(for: base.addingTimeInterval(-(23 * 3600 + 59 * 60 + 29)), relativeTo: base)).to(equal("24 hours ago"))
-                    expect(formatter.string(for: base.addingTimeInterval(-(23 * 3600 + 59 * 60 + 30)), relativeTo: base)).to(equal("1 day ago"))
-                }
+            var formatter: TimeFormatter!
+            beforeEach {
+                base = ISO8601DateFormatter().date(from: "2026-07-08T12:00:00Z")
+                formatter = TimeFormatter()
             }
 
-            context("with approximate: true") {
-                var formatter: TimeFormatter!
-                beforeEach { formatter = TimeFormatter(approximate: true) }
+            it("29s stays less than a minute, 30s rounds up to 1 minute") {
+                let justBefore: Date = base.addingTimeInterval(-29)
+                let atCutoff: Date = base.addingTimeInterval(-30)
+                expect(formatter.string(for: justBefore, relativeTo: base)).to(equal("less than a minute ago"))
+                expect(formatter.string(for: atCutoff, relativeTo: base)).to(equal("1 minute ago"))
+            }
 
-                it("44:29 has no about, 44:30 gains about (entering the hour bucket)") {
-                    expect(formatter.string(for: base.addingTimeInterval(-(44 * 60 + 29)), relativeTo: base)).to(equal("44 minutes ago"))
-                    expect(formatter.string(for: base.addingTimeInterval(-(44 * 60 + 30)), relativeTo: base)).to(equal("about 1 hour ago"))
-                }
+            it("89s stays 1 minute, 90s rounds up to 2 minutes") {
+                let justBefore: Date = base.addingTimeInterval(-89)
+                let atCutoff: Date = base.addingTimeInterval(-90)
+                expect(formatter.string(for: justBefore, relativeTo: base)).to(equal("1 minute ago"))
+                expect(formatter.string(for: atCutoff, relativeTo: base)).to(equal("2 minutes ago"))
+            }
 
-                it("23:59:29 keeps about, 23:59:30 drops about (entering the day bucket)") {
-                    expect(formatter.string(for: base.addingTimeInterval(-(23 * 3600 + 59 * 60 + 29)), relativeTo: base)).to(equal("about 24 hours ago"))
-                    expect(formatter.string(for: base.addingTimeInterval(-(23 * 3600 + 59 * 60 + 30)), relativeTo: base)).to(equal("1 day ago"))
-                }
+            it("44:29 stays 44 minutes, 44:30 rounds up to 1 hour") {
+                let justBefore: Date = base.addingTimeInterval(-(44 * 60 + 29))
+                let atCutoff: Date = base.addingTimeInterval(-(44 * 60 + 30))
+                expect(formatter.string(for: justBefore, relativeTo: base)).to(equal("44 minutes ago"))
+                expect(formatter.string(for: atCutoff, relativeTo: base)).to(equal("1 hour ago"))
+            }
+
+            it("89:29 stays 1 hour, 89:30 rounds up to 2 hours") {
+                let justBefore: Date = base.addingTimeInterval(-(89 * 60 + 29))
+                let atCutoff: Date = base.addingTimeInterval(-(89 * 60 + 30))
+                expect(formatter.string(for: justBefore, relativeTo: base)).to(equal("1 hour ago"))
+                expect(formatter.string(for: atCutoff, relativeTo: base)).to(equal("2 hours ago"))
+            }
+
+            it("23:59:29 stays 24 hours, 23:59:30 rounds up to 1 day") {
+                let justBefore: Date = base.addingTimeInterval(-(23 * 3600 + 59 * 60 + 29))
+                let atCutoff: Date = base.addingTimeInterval(-(23 * 3600 + 59 * 60 + 30))
+                expect(formatter.string(for: justBefore, relativeTo: base)).to(equal("24 hours ago"))
+                expect(formatter.string(for: atCutoff, relativeTo: base)).to(equal("1 day ago"))
+            }
+        }
+
+        describe("TimeFormatter#string at the approximate-distance bucket table boundaries, with approximate: true") {
+            var base: Date!
+            var formatter: TimeFormatter!
+            beforeEach {
+                base = ISO8601DateFormatter().date(from: "2026-07-08T12:00:00Z")
+                formatter = TimeFormatter(approximate: true)
+            }
+
+            it("44:29 has no about, 44:30 gains about (entering the hour bucket)") {
+                let justBefore: Date = base.addingTimeInterval(-(44 * 60 + 29))
+                let atCutoff: Date = base.addingTimeInterval(-(44 * 60 + 30))
+                expect(formatter.string(for: justBefore, relativeTo: base)).to(equal("44 minutes ago"))
+                expect(formatter.string(for: atCutoff, relativeTo: base)).to(equal("about 1 hour ago"))
+            }
+
+            it("23:59:29 keeps about, 23:59:30 drops about (entering the day bucket)") {
+                let justBefore: Date = base.addingTimeInterval(-(23 * 3600 + 59 * 60 + 29))
+                let atCutoff: Date = base.addingTimeInterval(-(23 * 3600 + 59 * 60 + 30))
+                expect(formatter.string(for: justBefore, relativeTo: base)).to(equal("about 24 hours ago"))
+                expect(formatter.string(for: atCutoff, relativeTo: base)).to(equal("1 day ago"))
             }
         }
     }
