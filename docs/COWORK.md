@@ -199,6 +199,13 @@ example distance (already covered by real specs here); the top-of-README
 3-minute example is untouched -- it's correct as-is, since ActionView's own
 table has no "about" below the hour bucket.
 
+The `for:`/`at:`/`_:_:` naming pass, keeping `for:` as primary rather than
+switching to `at:`, and `includeSeconds`/`approximate` defaulting `false` are
+all the same underlying call: Foundation is the baseline every default
+matches exactly in all three languages; ActionView's vocabulary is a layer
+on top of that baseline, opt-in, never a replacement for it. Made explicit
+in the README's "Beyond Foundation's defaults" section this session.
+
 ## Next up
 
 1. Circle back to `humane` and `humane-ruby`: rename `CollapseMinute`/
