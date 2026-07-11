@@ -54,6 +54,11 @@ public struct TimeFormatter {
         return wrap(text, future: future)
     }
 
+    /// Alias for `string(for:relativeTo:)` using `at`, the parameter name shared with `humane` (Go) and `humane-ruby`, where `for` is a reserved word. `for:` stays this package's primary, Foundation-matching spelling. See docs/COMMENTS.md.
+    public func string(at date: Date, relativeTo referenceDate: Date) -> String {
+        string(for: date, relativeTo: referenceDate)
+    }
+
     private func wrap(_ text: String, future: Bool) -> String {
         future ? "in " + text : text + " ago"
     }

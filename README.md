@@ -25,6 +25,11 @@ Matches `ByteCountFormatter`/`RelativeDateTimeFormatter` output exactly by
 default -- the wrapping exists so a Go or Ruby application shares identical
 output with a Swift one, not because Foundation needs correcting.
 
+`TimeFormatter` also accepts `string(at:relativeTo:)` as an alias for
+`string(for:relativeTo:)` -- `at` is the parameter name shared with `humane`
+(Go) and `humane-ruby`, where `for` isn't available as a keyword argument.
+Use whichever reads more naturally; `for:` is the primary spelling here.
+
 ## Install
 
 Add as a Swift Package Manager dependency:

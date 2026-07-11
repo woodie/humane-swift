@@ -64,3 +64,17 @@ and that correction no longer applies.
     let approx = TimeFormatter(approximate: true)
     approx.string(for: t.addingTimeInterval(-15 * 3600), relativeTo: t) == "about 15 hours ago"
     approx.string(for: t.addingTimeInterval(-30 * 3600), relativeTo: t) == "1 day ago"  // no "about" -- ActionView's table has none on the day bucket
+
+### `TimeFormatter.string(at:relativeTo:)`
+Additive alias for `string(for:relativeTo:)`. `at` is the parameter name
+`humane` (Go) and `humane-ruby` actually share -- Ruby can't call it `for`
+at all (`for` is a reserved word there, so `def string(for:, ...)` is a
+syntax error), so `at` is the only name available in every language, not
+a stylistic pick. `for:` remains this package's primary spelling since it
+matches `RelativeDateTimeFormatter`'s own argument label and this
+package's whole premise is feeling native to Foundation; `at:` exists
+purely so the three languages can be compared/grepped side by side
+without the one genuine naming mismatch between them (see `humane`'s and
+`humane-ruby`'s own `docs/COWORK.md` "Naming" sections for the full
+rationale). Implemented as a one-line forward to `string(for:relativeTo:)`,
+not a separate implementation.

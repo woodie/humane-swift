@@ -68,6 +68,16 @@ ActionView vocabulary rather than new, invented concepts:
 Renaming those to `IncludeSeconds`/`include_seconds` (with the accompanying default
 flip) is deliberately deferred until after this package ships -- see "Next up".
 
+- **`string(at:relativeTo:)`**: additive alias for `string(for:relativeTo:)`, added once
+  `humane`/`humane-ruby` picked up ActionView's `Approximate`/`approximate` and it became
+  clear this family is no longer a pure Swift port -- it's its own thing with Foundation
+  as the baseline, which made the one real naming mismatch between the three languages
+  worth closing. `at` is canonical because it's the only name Ruby can actually use
+  (`for` is a reserved word there); Swift keeps `for:` as its primary spelling since it
+  matches `RelativeDateTimeFormatter` and this package's whole point is feeling native to
+  Foundation. Go has no argument labels at all, so its side of this is just a parameter
+  rename in the signature (`at`, cosmetic-only) -- see `humane`'s own `docs/COWORK.md`.
+
 ## Design decisions
 
 - **`SizeFormatter`**: a one-line passthrough to
@@ -162,6 +172,13 @@ the bucketing source (see "Design decisions" above) -- `TimeFormatter` now compu
 picked up the identical table change in the same session. Confirmed for real via
 `swift test` on woodie's Mac -- 35/35 passing, alongside `humane-ruby`'s (35/35) and
 `humane`'s (36/36) identical changes in the same session.
+
+`TimeFormatter` gained `string(at:relativeTo:)`, an additive alias for
+`string(for:relativeTo:)` -- see "Naming" above. One-line forward, no behavior change,
+no existing call sites affected. Written by inspection in this session; **not yet
+confirmed via a real `swift test`** -- no Swift toolchain in this sandbox (see "Sandbox
+limitation"). Needs a real run on woodie's Mac before this is considered done, same as
+every other change here.
 
 ## Next up
 
