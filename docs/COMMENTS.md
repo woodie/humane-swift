@@ -79,14 +79,53 @@ factor mattered had each turned out wrong on the real CI runner.
 
 ## Sources/Humane/SizeFormatter.swift
 
-### `SizeFormatter.string(_:)`
-Positional alias for `string(fromByteCount:)`, matching `humane` (Go)'s
-label-free calling convention -- same reasoning and same session as
-`TimeFormatter.string(_:_:)` below. One-line forward, no separate
-implementation. `humane-ruby`'s `SizeFormatter#string` picked up the
-equivalent positional-or-keyword support in the same pass.
+### `SizeFormatter` (enum, static `humanSize`)
+`v0.9.0` drops the instantiated-formatter shape (`SizeFormatter().string(
+fromByteCount:)`) for a static function on a case-less enum used purely as
+a namespace -- see `docs/COWORK.md`'s `v0.9.0` entry for the full
+cross-repo rationale. The implementation itself is unchanged: still a
+one-line passthrough to `ByteCountFormatter`, still the authoritative
+reference `humane`/`humane-ruby`'s hand-rolled math is checked against,
+since Foundation already gets this right for free and there's no reason
+to duplicate it here the way those two languages have to.
 
 ## Sources/Humane/TimeFormatter.swift
+
+### `TimeFormatter` (enum, static `timeAgo`)
+`v0.9.0` drops the instantiated-formatter shape (`TimeFormatter(approximate:
+true).string(for:relativeTo:)`) for a static function on a case-less enum,
+matching the `SizeFormatter` change above and `humane`/`humane-ruby`'s
+equivalent moves in the same session -- each language keeps its own
+idiomatic casing for the shared concept (`timeAgo` here, `TimeAgo` in Go,
+`time_ago` in Ruby) rather than one literal spelling. Configuration moves
+from initializer parameters to call-site parameters; Swift's native
+default parameter values make this a plain signature change; no `TimeOptions`
+struct is needed the way Go's zero-value semantics required (see `humane`'s
+own `docs/COMMENTS.md`).
+
+### `approximate` default flips `false` -> `true`
+Matches ActionView's own `distance_of_time_in_words` (which has no toggle
+for this at all -- always on past the hour boundary), and, checked against
+real code, matches what `zouk`'s `ScanEntry.swift` already passed
+explicitly (`Humane.TimeFormatter(approximate: true)`). Zero behavior
+change for the one real Swift consumer; removes required boilerplate at
+the call site instead. `includeSeconds` stays `false` by default,
+unchanged.
+
+### `whenNil`
+Added in `v0.9.0` alongside `timeAgo` accepting `Date?` instead of `Date`.
+Motivated directly by `zouk`'s own `ScanEntry.timeAgo(relativeTo:)`, which
+used to guard a possibly-unparsable `downloadedAt` itself
+(`guard let downloadedAt else { return nil }`) and hand the caller a
+`String?` that still needed its own `?? "an unknown time"` fallback one
+layer up in `ScanGridView` -- two guard points for one final string.
+`timeAgo` now takes the optional directly and a caller-supplied fallback
+string, collapsing both guard points into one call -- once `zouk` adopts
+this, `ScanEntry.timeAgo`'s wrapper can likely be removed entirely in
+favor of calling `Humane.TimeFormatter.timeAgo` straight from the view.
+The fallback text stays app-specific (an empty default, not a hardcoded
+string baked into this package), matching how `approximate`/
+`includeSeconds` are already opt-in rather than assumed.
 
 ### `TimeFormatter.includeSeconds`
 Under 30 seconds (not 60), collapses to "less than a minute ago"/"in less
@@ -111,7 +150,7 @@ hours") -- Foundation's own rounding doesn't jump buckets that early, so
 there was no "about"-eligible bucket text to surgery onto. See `string`
 below for what replaced it.
 
-### `TimeFormatter.string`
+### `TimeFormatter.timeAgo`
 Buckets are chosen from `distanceInMinutes` (seconds/60, rounded once via
 `Double.rounded()`), not by re-dividing raw seconds independently per
 unit, and not by delegating to `RelativeDateTimeFormatter`'s own rounding
@@ -131,37 +170,22 @@ are out of scope -- see "Scope" in README.md).
 supplied the base phrase (with `approximate` string-surgeried on top) and
 needed an inline correction for its own exact-zero-delta quirk (calling
 it `"in 0 seconds"`, future-tense, rather than `"0 seconds ago"`). Now
-that `future` is computed directly (`date > referenceDate`, false when
-equal) and bucketing is hand-rolled, zero is past-tense by construction
-and that correction no longer applies.
+that `future` is computed directly (`at > relativeTo`, false when equal)
+and bucketing is hand-rolled, zero is past-tense by construction and that
+correction no longer applies.
 
-    string(for: t, relativeTo: t)                              == "less than a minute ago"
-    string(for: t.addingTimeInterval(-45), relativeTo: t)       == "1 minute ago"
-    string(for: t.addingTimeInterval(-15 * 3600), relativeTo: t) == "15 hours ago"
-    string(for: t.addingTimeInterval(-30 * 3600), relativeTo: t) == "1 day ago"
+`v0.9.0` dropped the `for:relativeTo:` / `at:relativeTo:` / `string(_:_:)`
+trio of labeled and positional overloads down to one static function with
+two positional parameters and three defaulted keyword options
+(`approximate:`, `includeSeconds:`, `whenNil:`) -- see the top-level
+`TimeFormatter` entry above. `for`/`at` existed specifically to bridge
+Swift's `RelativeDateTimeFormatter`-style label and the `at` every other
+language in the family was forced into (Ruby's `for` is a reserved word);
+once this package stopped mirroring `RelativeDateTimeFormatter`'s API
+shape at all, maintaining both spellings stopped earning its keep.
 
-    let approx = TimeFormatter(approximate: true)
-    approx.string(for: t.addingTimeInterval(-15 * 3600), relativeTo: t) == "about 15 hours ago"
-    approx.string(for: t.addingTimeInterval(-30 * 3600), relativeTo: t) == "1 day ago"  // no "about" -- ActionView's table has none on the day bucket
-
-### `TimeFormatter.string(at:relativeTo:)`
-Additive alias for `string(for:relativeTo:)`. `at` is the parameter name
-`humane` (Go) and `humane-ruby` actually share -- Ruby can't call it `for`
-at all (`for` is a reserved word there, so `def string(for:, ...)` is a
-syntax error), so `at` is the only name available in every language, not
-a stylistic pick. `for:` remains this package's primary spelling since it
-matches `RelativeDateTimeFormatter`'s own argument label and this
-package's whole premise is feeling native to Foundation; `at:` exists
-purely so the three languages can be compared/grepped side by side
-without the one genuine naming mismatch between them (see `humane`'s and
-`humane-ruby`'s own `docs/COWORK.md` "Naming" sections for the full
-rationale). Implemented as a one-line forward to `string(for:relativeTo:)`,
-not a separate implementation.
-
-### `TimeFormatter.string(_:_:)`
-Positional alias, no argument labels at all -- for callers who'd rather skip
-labels entirely, matching `humane` (Go), which has no argument labels to
-begin with (Go's calling convention is positional-only, full stop). Also a
-one-line forward to `string(for:relativeTo:)`. Added alongside `at:relativeTo:`
-in the same cross-language naming pass; `humane-ruby`'s `#string` picked up
-the equivalent positional-or-keyword support -- see its own `docs/COMMENTS.md`.
+    timeAgo(t, t)                              == "less than a minute ago"
+    timeAgo(t.addingTimeInterval(-45), t)       == "1 minute ago"
+    timeAgo(t.addingTimeInterval(-15 * 3600), t) == "about 15 hours ago"
+    timeAgo(t.addingTimeInterval(-30 * 3600), t) == "1 day ago"  // no "about" -- ActionView's table has none on the day bucket
+    timeAgo(nil, t, whenNil: "an unknown time")  == "an unknown time"

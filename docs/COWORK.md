@@ -296,16 +296,65 @@ part of the cross-language numeral comparison, and `15 * 3600` is a standard,
 transparent hours-to-seconds conversion rather than a language-specific
 constant like Go's `time.Minute` was.
 
+## `v0.9.0`: a full API rethink, informed by three real consumers
+
+Through `v0.3.0` this package existed to mirror `ByteCountFormatter`/
+`RelativeDateTimeFormatter`'s own API shape as closely as possible --
+instantiated formatters, `for:relativeTo:` matching Foundation's own
+argument labels. With three real consumers now shipped (`lambada`,
+`scandalous`, `zouk`) and this package the sole user of its own API
+(woodie), the goal shifted: `humane`/`humane-ruby` need to feel as simple
+to drop into a Ruby or Go HTML template as ActionView's own helpers,
+while staying consistent with each other and with this package -- a
+different bar than "mirror Foundation faithfully." See `humane`'s own
+`docs/COWORK.md` `v0.9.0` entry for the full cross-repo rationale,
+summarized here:
+
+- **`SizeFormatter()`/`TimeFormatter()` -> static `SizeFormatter.humanSize`/
+  `TimeFormatter.timeAgo`**, case-less enums used as namespaces, no
+  instantiation. `humane` (Go) and `humane-ruby` picked up the equivalent
+  change in the same session (package functions, class methods
+  respectively) -- each language keeps its own idiomatic casing for the
+  shared concept rather than one literal spelling.
+- **`SizeFormatter.humanSize` is unchanged internally** -- still a
+  one-line `ByteCountFormatter` passthrough. This package's own
+  real-hardware testing is what found the zero/byte-scale/GB-scale
+  divergences `humane`/`humane-ruby` needed to correct toward (see
+  "Current state" below) -- nothing here needed correcting, since
+  Foundation was the reference all along.
+- **`timeAgo`'s `approximate` default flips `false` -> `true`** -- matches
+  ActionView's own always-on-past-the-hour behavior, and matches what
+  `zouk`'s `ScanEntry.swift` already passed explicitly. `includeSeconds`
+  stays `false`, unchanged.
+- **`timeAgo` accepts `at: Date?`** plus a new `whenNil:` parameter,
+  returned as-is when `at` is `nil` -- lets `zouk`'s `ScanEntry.timeAgo`
+  collapse its own two-layer guard/fallback dance into one call once it
+  adopts this (see `docs/COMMENTS.md`).
+- **The `for:`/`at:`/positional overload trio collapsed to one
+  signature.** Those existed to bridge `RelativeDateTimeFormatter`'s own
+  argument label and the `at` every other language was forced into; once
+  this package stopped mirroring `RelativeDateTimeFormatter`'s shape at
+  all, maintaining three spellings of the same call stopped earning its
+  keep.
+
+Written by inspection -- no Swift toolchain in this sandbox (see "Sandbox
+limitation" above). Needs a real `swift test` pass on woodie's Mac, same
+as every prior change here, and particular attention to the boundary
+spec's file-level isolation (see `docs/COMMENTS.md`) holding up under the
+signature change.
+
 ## Next up
 
 1. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in
-   `humane`/`humane-ruby` (this repo's own `v0.1.0` motivation for the
-   rename) is done -- both shipped it in their own `v0.3.0`s. `approximate`
-   backported to both as well, in their `v0.4.0`s. Nothing left open here.
-2. Decide whether `humane`/`humane-ruby`'s `SizeFormatter` math is worth correcting
-   toward exact `ByteCountFormatter` parity for the zero/byte-scale/GB-scale cases
-   found above, or whether "2 significant digits, close enough" is an accepted,
-   documented limitation -- currently neither repo's docs mention the gap.
-3. Once (2) lands, `humane-ruby#1` ("Provide ActionView compatibility mode") can be
-   closed with a pointer to `approximate` as the actual answer to what it was asking
-   for.
+   `humane`/`humane-ruby`, and `approximate` backported to both -- both done,
+   nothing left open here.
+2. `humane`/`humane-ruby`'s `SizeFormatter` math has been corrected toward
+   `ByteCountFormatter` parity (`v0.9.0` each) using this
+   package's real-hardware findings as the reference. `humane-ruby#1`
+   ("Provide ActionView compatibility mode") can now be closed with a
+   pointer to `approximate` plus the parity fix as the actual answer to
+   what it was asking for.
+3. `zouk` needs a follow-up pass to adopt this API -- see its own
+   `docs/COWORK.md` once that happens. Likely simplifies `ScanEntry.timeAgo`
+   down to a direct call, since `whenNil:` can absorb what used to be its
+   own `guard let`.

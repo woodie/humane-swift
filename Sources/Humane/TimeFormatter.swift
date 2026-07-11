@@ -1,21 +1,25 @@
 import Foundation
 
-/// Formats one time relative to another the way Finder-adjacent tools do.
-public struct TimeFormatter {
-    /// Under 30 seconds, collapse to "less than a minute ago"/"in less than a minute". Matches ActionView's `include_seconds` default.
-    public var includeSeconds: Bool
+/// Formats one time relative to another the way ActionView's
+/// `distance_of_time_in_words` does for wording, but direction-aware like
+/// `RelativeDateTimeFormatter` -- see docs/COMMENTS.md.
+public enum TimeFormatter {
+    /// Returns `at` relative to `relativeTo` as a human-readable string. If
+    /// `at` is `nil`, returns `whenNil` without formatting -- see
+    /// docs/COMMENTS.md.
+    ///
+    ///     TimeFormatter.timeAgo(Date().addingTimeInterval(-180), Date()) // "3 minutes ago"
+    public static func timeAgo(
+        _ at: Date?,
+        _ relativeTo: Date,
+        approximate: Bool = true,
+        includeSeconds: Bool = false,
+        whenNil: String = ""
+    ) -> String {
+        guard let at else { return whenNil }
 
-    /// Prefix "about"/"in about" on the hour-scale buckets, matching ActionView's `distance_of_time_in_words`. See docs/COMMENTS.md.
-    public var approximate: Bool
-
-    public init(includeSeconds: Bool = false, approximate: Bool = false) {
-        self.includeSeconds = includeSeconds
-        self.approximate = approximate
-    }
-
-    public func string(for date: Date, relativeTo referenceDate: Date) -> String {
-        let seconds = abs(referenceDate.timeIntervalSince(date))
-        let future = date > referenceDate
+        let seconds = abs(relativeTo.timeIntervalSince(at))
+        let future = at > relativeTo
 
         if !includeSeconds && seconds < 30 {
             return future ? "in less than a minute" : "less than a minute ago"
@@ -25,7 +29,7 @@ public struct TimeFormatter {
             return wrap(pluralize(Int(seconds), "second"), future: future)
         }
 
-        // Buckets come from distanceInMinutes, not RelativeDateTimeFormatter's own rounding -- see docs/COMMENTS.md.
+        // Buckets come from distanceInMinutes, not raw seconds re-divided per unit -- see docs/COMMENTS.md.
         let distanceInMinutes = Int((seconds / 60.0).rounded())
 
         var text: String
@@ -54,21 +58,11 @@ public struct TimeFormatter {
         return wrap(text, future: future)
     }
 
-    /// Alias for `string(for:relativeTo:)` using `at`, the parameter name shared with `humane` (Go) and `humane-ruby`, where `for` is a reserved word. `for:` stays this package's primary, Foundation-matching spelling. See docs/COMMENTS.md.
-    public func string(at date: Date, relativeTo referenceDate: Date) -> String {
-        string(for: date, relativeTo: referenceDate)
-    }
-
-    /// Positional alias for `string(for:relativeTo:)`, for callers who'd rather skip argument labels entirely -- matches `humane` (Go), which has no labels at all. See docs/COMMENTS.md.
-    public func string(_ date: Date, _ referenceDate: Date) -> String {
-        string(for: date, relativeTo: referenceDate)
-    }
-
-    private func wrap(_ text: String, future: Bool) -> String {
+    private static func wrap(_ text: String, future: Bool) -> String {
         future ? "in " + text : text + " ago"
     }
 
-    private func pluralize(_ count: Int, _ unit: String) -> String {
+    private static func pluralize(_ count: Int, _ unit: String) -> String {
         count == 1 ? "1 \(unit)" : "\(count) \(unit)s"
     }
 }
