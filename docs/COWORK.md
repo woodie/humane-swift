@@ -241,19 +241,34 @@ Fixed by doing what the compiler's own error suggests -- pulling each
 and splitting its two `context`s into their own top-level `describe`s, same
 as the rest of the file. Same 7 `it` cases, same assertions.
 
-**Still unconfirmed on the actual CI runner** -- this second-round fix has
-only been reasoned through by inspection so far (no Swift toolchain in this
-sandbox); needs a real `swift test` and a green Actions run before it's
-trusted, same bar as everything else here. Two real CI logs in a row have
-each caught something a local pass alone wouldn't have.
+Round 2 still failed on CI -- a third real log, same two describes, both
+still "unable to type-check." The remaining common thread: those were the
+only blocks in the file where one `it` made two back-to-back
+`expect(formatter.string(...)).to(equal(...))` calls; everywhere else in
+the file already has one assertion per `it`. `TimeFormatter.string` also
+picked up two new overloads this session (`at:relativeTo:`, `_:_:`), so
+each such call now resolves against three candidates inside Nimble's
+generic `equal` -- plausible trigger, twice per closure, for exactly the
+two blocks that do it twice. Round 3: resolve each `.string(...)` call to a
+type-annotated `let result: String` before `expect` sees it, and split
+every two-assertion `it` into two one-assertion `it`s. 14 `it` cases now
+(was 7) -- more granular, same coverage.
+
+**Still unconfirmed on the actual CI runner.** Three real CI logs in a row
+have each caught something a local `swift test` pass didn't -- this
+sandbox has no Swift toolchain, so every round here has been reasoning
+from the compiler's own error text plus what's structurally different
+about the failing block, not something confirmed by actually compiling it.
+Needs a real `swift test` and a green Actions run before round 3 is
+trusted any more than rounds 1 and 2 were.
 
 ## Next up
 
-1. Confirm the second-round `TimeFormatterSpec` fix (extracted `let`s +
-   the boundary-table block split in two) actually turns CI green -- a
-   third real CI log, this time hopefully clean. `swift test` passing
-   locally doesn't by itself prove this, per the exact local-vs-CI
-   divergence that caused the original problem.
+1. Confirm the third-round `TimeFormatterSpec` fix (typed `let result:
+   String` before every `expect`, one assertion per `it`) actually turns CI
+   green -- a fourth real CI log. `swift test` passing locally hasn't
+   proven this at any point so far; only an actual Actions run has moved
+   this forward each round.
 2. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in
    `humane`/`humane-ruby` (this repo's own `v0.1.0` motivation for the
    rename) is done -- both shipped it in their own `v0.3.0`s. `approximate`

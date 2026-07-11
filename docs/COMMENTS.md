@@ -48,6 +48,22 @@ before the `expect` calls, plus splitting the block's two contexts
 top-level describes rather than nested `context`s under a shared one.
 Same 7 `it` cases (5 + 2), same assertions, same behavior.
 
+That round-2 fix still failed on CI, on the exact same two describes --
+confirmed via a third real CI log. The remaining common factor: this was
+the only block in the file where a single `it` made *two*
+`expect(formatter.string(...)).to(equal(...))` calls back to back; every
+other block already had one assertion per `it`. `TimeFormatter.string` also
+gained two new overloads this session (`at:relativeTo:`, `_:_:`), so
+`formatter.string(for:relativeTo:)` now has three candidates to resolve
+inside Nimble's generic `equal` machinery -- plausibly expensive enough,
+twice per closure, to be the actual trigger, even though the file otherwise
+type-checks fine with those same three overloads in play everywhere else
+(where each `it` only calls `.string` once). Fixed by resolving each
+`.string(...)` call to a concrete, type-annotated `let result: String`
+*before* handing it to `expect`, and splitting every two-assertion `it`
+into two one-assertion `it`s, matching the rest of the file. 14 `it` cases
+now (was 7) -- more granular, same coverage, same cutoffs asserted.
+
 ## Sources/Humane/SizeFormatter.swift
 
 ### `SizeFormatter.string(_:)`
