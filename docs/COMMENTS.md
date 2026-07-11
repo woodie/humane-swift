@@ -64,6 +64,19 @@ type-checks fine with those same three overloads in play everywhere else
 into two one-assertion `it`s, matching the rest of the file. 14 `it` cases
 now (was 7) -- more granular, same coverage, same cutoffs asserted.
 
+Round 3 *also* failed on CI, on the exact same two describes, at the exact
+same line numbers -- a fourth real CI log. The tell: within-file
+restructuring (regrouping describes, extracting lets, reducing assertions
+per `it`) wasn't going to fix this no matter how it was sliced, since every
+variant tried still put all of this content inside the same `describe`
+closure in the same file. Moved to its own file/QuickSpec subclass entirely
+-- see `TimeFormatterBoundarySpec.swift` -- a stronger form of isolation
+than another describe split. Also replaced the compound arithmetic
+(`44 * 60 + 29`) with precomputed integer literals (`-2669`, comment shows
+the derivation), removing another layer of inline expression complexity on
+top of the file split, since three prior guesses about which specific
+factor mattered had each turned out wrong on the real CI runner.
+
 ## Sources/Humane/SizeFormatter.swift
 
 ### `SizeFormatter.string(_:)`

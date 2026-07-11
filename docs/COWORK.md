@@ -254,21 +254,36 @@ type-annotated `let result: String` before `expect` sees it, and split
 every two-assertion `it` into two one-assertion `it`s. 14 `it` cases now
 (was 7) -- more granular, same coverage.
 
-**Still unconfirmed on the actual CI runner.** Three real CI logs in a row
+Round 3 also failed on CI, on the exact same two describes, at the exact
+same line numbers -- a fourth real CI log. That's the actual signal: three
+different within-file restructurings (describe grouping, let extraction,
+assertion count) each failed on identical content, which means the
+specific internal shape of these `it`s was never the variable that
+mattered -- everything tried still lived inside the same `describe`
+closure in the same file. Round 4: moved both describes into their own
+new file, `TimeFormatterBoundarySpec.swift`, as a separate `QuickSpec`
+subclass -- real isolation instead of another in-file split. Also swapped
+the compound arithmetic (`44 * 60 + 29`) for precomputed integer literals
+(`-2669`, with a comment showing the derivation), since three wrong
+guesses in a row about the specific trigger warranted removing every
+plausible source of complexity at once rather than one at a time.
+
+**Still unconfirmed on the actual CI runner.** Four real CI logs in a row
 have each caught something a local `swift test` pass didn't -- this
-sandbox has no Swift toolchain, so every round here has been reasoning
-from the compiler's own error text plus what's structurally different
-about the failing block, not something confirmed by actually compiling it.
-Needs a real `swift test` and a green Actions run before round 3 is
-trusted any more than rounds 1 and 2 were.
+sandbox has no Swift toolchain, so every round has been reasoning from the
+compiler's error text and what's structurally different about the failing
+content, not something confirmed by compiling it. Needs a real `swift
+test` and a green Actions run before round 4 is trusted any more than the
+three before it were.
 
 ## Next up
 
-1. Confirm the third-round `TimeFormatterSpec` fix (typed `let result:
-   String` before every `expect`, one assertion per `it`) actually turns CI
-   green -- a fourth real CI log. `swift test` passing locally hasn't
-   proven this at any point so far; only an actual Actions run has moved
-   this forward each round.
+1. Confirm round 4 (separate file, precomputed literals) actually turns CI
+   green -- a fifth real CI log. If this still fails, the working
+   hypothesis should shift from "which expression is too dense" to
+   something more structural (a `Package.swift`/CI-runner toolchain
+   difference from woodie's Mac, or a Quick/Nimble version issue) rather
+   than another rewrite of the same content.
 2. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in
    `humane`/`humane-ruby` (this repo's own `v0.1.0` motivation for the
    rename) is done -- both shipped it in their own `v0.3.0`s. `approximate`
