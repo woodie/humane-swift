@@ -282,6 +282,20 @@ compound arithmetic) needed to address. Four consecutive real CI logs, not
 guesses validated only by a local pass, is what made each round's next
 guess better-informed than the last.
 
+README's Install snippet still pinned `from: "0.1.0"` after `v0.3.0` shipped --
+stale (SPM's `from:` resolves forward so nothing was actually broken for
+consumers, but the snippet read as if the package hadn't moved since its
+first release). Bumped to `from: "0.3.0"`. Checked the rest of both this
+README and `humane-ruby`'s for the same "compound arithmetic obscures the
+numeral" issue the `humane` (Go) README's `-3*time.Minute` -> `-180*time.Second`
+fix addressed -- both READMEs' top-of-file comparison examples already use
+bare `180`/`-180`, so no issue there. The `approximate: true` example further
+down (`Date().addingTimeInterval(-15 * 3600)` here, `t - 15 * 3600` in Ruby)
+still uses `15 * 3600`, but left as-is: it's a per-language feature demo, not
+part of the cross-language numeral comparison, and `15 * 3600` is a standard,
+transparent hours-to-seconds conversion rather than a language-specific
+constant like Go's `time.Minute` was.
+
 ## Next up
 
 1. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in

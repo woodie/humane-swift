@@ -43,7 +43,7 @@ timeFormatter.string(Date().addingTimeInterval(-180), Date()) // "3 minutes ago"
 Add as a Swift Package Manager dependency:
 
 ```swift
-.package(url: "https://github.com/woodie/humane-swift.git", from: "0.1.0")
+.package(url: "https://github.com/woodie/humane-swift.git", from: "0.3.0")
 ```
 
 ## Beyond Foundation's defaults
