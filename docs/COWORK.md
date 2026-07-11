@@ -196,12 +196,12 @@ Foundation is the baseline every default matches exactly in all three
 languages; ActionView's vocabulary is a layer on top of that baseline,
 opt-in, never a replacement for it.
 
-**Tagged locally as `v0.3.0`; not yet pushed or released.** Written by
-inspection -- **not yet confirmed via a real `swift test`** -- no Swift
-toolchain in this sandbox (see "Sandbox limitation"). A real `swift test`
-run, then `git push --tags` and `gh release create v0.3.0 --title "v0.3.0"
---notes-file docs/releases/v0.3.0.md`, still need to happen on woodie's Mac
-before this is truly done, same as every other release here.
+Written by inspection in the sandbox, then confirmed for real via `swift
+test` on woodie's Mac -- 38/38 passing, including every alias/positional
+case added this session. Tagged, pushed, and **released**:
+[github.com/woodie/humane-swift/releases/tag/v0.3.0](https://github.com/woodie/humane-swift/releases/tag/v0.3.0)
+(via `gh release create v0.3.0 --title "v0.3.0" --notes-file
+docs/releases/v0.3.0.md`).
 
 ## Next up
 
