@@ -268,30 +268,30 @@ the compound arithmetic (`44 * 60 + 29`) for precomputed integer literals
 guesses in a row about the specific trigger warranted removing every
 plausible source of complexity at once rather than one at a time.
 
-**Still unconfirmed on the actual CI runner.** Four real CI logs in a row
-have each caught something a local `swift test` pass didn't -- this
-sandbox has no Swift toolchain, so every round has been reasoning from the
-compiler's error text and what's structurally different about the failing
-content, not something confirmed by compiling it. Needs a real `swift
-test` and a green Actions run before round 4 is trusted any more than the
-three before it were.
+**Round 4 confirmed green on the actual CI runner** -- the fifth real CI
+log, and the first clean one since `v0.2.0`. `TimeFormatterSpec.swift` and
+the new `TimeFormatterBoundarySpec.swift` both build and pass on CI's real
+Xcode 15.4/Swift 5.10, not just on woodie's Mac. CI is fixed.
+
+In hindsight, rounds 1-3 weren't wasted even though each individually
+failed: round 1 (file-level describe split) cleared every block except the
+boundary one, and rounds 2-3 (Date/String `let` extraction, one assertion
+per `it`) each ruled out a plausible cause without fixing it -- narrowing
+what round 4's actual fix (a separate compilation unit, plus removing the
+compound arithmetic) needed to address. Four consecutive real CI logs, not
+guesses validated only by a local pass, is what made each round's next
+guess better-informed than the last.
 
 ## Next up
 
-1. Confirm round 4 (separate file, precomputed literals) actually turns CI
-   green -- a fifth real CI log. If this still fails, the working
-   hypothesis should shift from "which expression is too dense" to
-   something more structural (a `Package.swift`/CI-runner toolchain
-   difference from woodie's Mac, or a Quick/Nimble version issue) rather
-   than another rewrite of the same content.
-2. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in
+1. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in
    `humane`/`humane-ruby` (this repo's own `v0.1.0` motivation for the
    rename) is done -- both shipped it in their own `v0.3.0`s. `approximate`
    backported to both as well, in their `v0.4.0`s. Nothing left open here.
-3. Decide whether `humane`/`humane-ruby`'s `SizeFormatter` math is worth correcting
+2. Decide whether `humane`/`humane-ruby`'s `SizeFormatter` math is worth correcting
    toward exact `ByteCountFormatter` parity for the zero/byte-scale/GB-scale cases
    found above, or whether "2 significant digits, close enough" is an accepted,
    documented limitation -- currently neither repo's docs mention the gap.
-4. Once (2) lands, `humane-ruby#1` ("Provide ActionView compatibility mode") can be
+3. Once (2) lands, `humane-ruby#1` ("Provide ActionView compatibility mode") can be
    closed with a pointer to `approximate` as the actual answer to what it was asking
    for.
