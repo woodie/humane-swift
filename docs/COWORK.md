@@ -213,18 +213,32 @@ failure and not something introduced this session (`v0.2.0`'s own CI run
 is red too) -- a local `swift test` on a fast Mac can still pass while the
 CI runner's type checker times out on the same giant nested-closure
 expression. Fixed by splitting `TimeFormatterSpec` into multiple sibling
-top-level `describe`s -- see `docs/COMMENTS.md`. `ci.yml` also gained
-`-Xswiftc -solver-expression-time-limit=600` as a margin of safety.
-**Unconfirmed** -- written and reasoned about by inspection only, no Swift
-toolchain in this sandbox to compile or run it. Needs a real `swift test`
-and a green CI run on woodie's Mac before this is trusted.
+top-level `describe`s -- see `docs/COMMENTS.md`. Confirmed via a real
+`swift test` on woodie's Mac -- 38/38 passing, same count and behavior as
+before the split.
+
+`ci.yml` briefly also gained `-Xswiftc -solver-expression-time-limit=600`
+as a margin of safety, added and reverted in the same session: it's a
+frontend-only flag, and passing it bare through `-Xswiftc` (instead of
+threaded as `-Xswiftc -Xfrontend -Xswiftc -solver-expression-time-limit=600`)
+produced `error: unknown argument: '-solver-expression-time-limit=600'` on
+CI's real Xcode 15.4/Swift 5.10 toolchain -- a genuine CI break introduced
+by this session's own fix attempt, caught via the real CI log, not the
+original type-checker problem. Removed rather than fixed, since the
+describe split is the real fix and doesn't need a compiler-flag hedge that
+can't be verified in this sandbox. `ci.yml` is back to plain `swift build
+-v`/`swift test -v`.
+
+**Still unconfirmed on the actual CI runner** -- the describe split has
+only been confirmed via `swift test` on woodie's Mac so far; a green
+Actions run (the thing that was actually broken) hasn't been observed yet.
 
 ## Next up
 
-1. Confirm the `TimeFormatterSpec` split actually fixes CI (push and watch
-   the Actions run go green), and confirm `swift test` still passes 38/38
-   locally after the restructuring -- the tests' behavior shouldn't have
-   changed, only their grouping, but that needs a real run to trust.
+1. Confirm the `TimeFormatterSpec` split actually fixes CI -- push the
+   flag revert and watch the Actions run go green. `swift test` passing
+   locally (38/38, confirmed) doesn't by itself prove this, per the exact
+   local-vs-CI divergence that caused the original problem.
 2. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in
    `humane`/`humane-ruby` (this repo's own `v0.1.0` motivation for the
    rename) is done -- both shipped it in their own `v0.3.0`s. `approximate`

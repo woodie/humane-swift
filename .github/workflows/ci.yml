@@ -13,7 +13,7 @@ jobs:
     - uses: actions/checkout@v4
 
     - name: Build
-      run: swift build -v -Xswiftc -solver-expression-time-limit=600
+      run: swift build -v
 
     - name: Test
-      run: swift test -v -Xswiftc -solver-expression-time-limit=600
+      run: swift test -v

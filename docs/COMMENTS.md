@@ -22,11 +22,17 @@ additions, though the two new alias describes likely pushed it further
 over. Each top-level `describe` now repeats its own `base`/`beforeEach`
 since Quick doesn't share state across sibling top-level describes -- a
 small amount of duplication traded for the compiler actually being able to
-type-check each block independently. `ci.yml` also gained
-`-Xswiftc -solver-expression-time-limit=600` on both `swift build`/`swift
-test` as a margin of safety, since this couldn't be compiled or confirmed
-in the Cowork sandbox (no Swift toolchain) -- the split is the real fix,
-the flag is a hedge in case some individual block is still borderline.
+type-check each block independently.
+
+`ci.yml` briefly gained `-Xswiftc -solver-expression-time-limit=600` on
+`swift build`/`swift test` as a hedge, then had it reverted in the same
+session: `-solver-expression-time-limit` is a frontend-only flag, so passing
+it bare through `-Xswiftc` (rather than threaded as `-Xswiftc -Xfrontend
+-Xswiftc -solver-expression-time-limit=600`) produces `error: unknown
+argument`, which broke the build *before* it ever reached the test file --
+confirmed via a real CI log. Removed rather than re-attempted, since it
+couldn't be verified in this sandbox (no Swift toolchain) and the describe
+split above is the real fix on its own merits.
 
 ## Sources/Humane/SizeFormatter.swift
 
