@@ -14,7 +14,10 @@ Ruby and Go HTML templates that render once and can't refresh themselves.
 import Humane
 
 SizeFormatter.humanSize(225_935) // "226 KB"
-TimeFormatter.timeAgo(Date().addingTimeInterval(-180), Date()) // "3 minutes ago"
+
+let now = Date()
+TimeFormatter.timeAgo(now, now) // "less than a minute ago"
+TimeFormatter.timeAgo(now.addingTimeInterval(-180), now) // "3 minutes ago"
 ```
 
 `SizeFormatter.humanSize` is a thin wrapper over `ByteCountFormatter` --
