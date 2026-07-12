@@ -15,9 +15,9 @@ import Humane
 
 SizeFormatter.humanSize(225_935) // "226 KB"
 
-let now = Date()
+let now = Date(); let mtime = now.addingTimeInterval(-180)
 TimeFormatter.timeAgo(now, now) // "less than a minute ago"
-TimeFormatter.timeAgo(now.addingTimeInterval(-180), now) // "3 minutes ago"
+TimeFormatter.timeAgo(mtime, now) // "3 minutes ago"
 ```
 
 `SizeFormatter.humanSize` is a thin wrapper over `ByteCountFormatter` --
