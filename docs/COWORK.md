@@ -338,10 +338,10 @@ summarized here:
   keep.
 
 Written by inspection -- no Swift toolchain in this sandbox (see "Sandbox
-limitation" above). Needs a real `swift test` pass on woodie's Mac, same
-as every prior change here, and particular attention to the boundary
-spec's file-level isolation (see `docs/COMMENTS.md`) holding up under the
-signature change.
+limitation" above). Confirmed for real via `swift test` on woodie's Mac --
+42/42 passing, including the boundary spec's file-level isolation (see
+`docs/COMMENTS.md`) holding up under the signature change. Tagged, pushed,
+and released: https://github.com/woodie/humane-swift/releases/tag/v0.9.0.
 
 ## Next up
 
@@ -354,7 +354,9 @@ signature change.
    ("Provide ActionView compatibility mode") can now be closed with a
    pointer to `approximate` plus the parity fix as the actual answer to
    what it was asking for.
-3. `zouk` needs a follow-up pass to adopt this API -- see its own
-   `docs/COWORK.md` once that happens. Likely simplifies `ScanEntry.timeAgo`
-   down to a direct call, since `whenNil:` can absorb what used to be its
-   own `guard let`.
+3. `zouk` adopted this API in its own `v1.11.0` -- `ScanEntry.timeAgo`
+   simplified down to a direct call, `whenNil:` absorbing what used to be
+   its own `guard let downloadedAt else { return nil }`. Signed, notarized,
+   released, and the `homebrew-zouk` cask auto-bumped via
+   `repository_dispatch` -- see `zouk`'s own `docs/COWORK.md`. Nothing left
+   open here.
