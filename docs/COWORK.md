@@ -388,10 +388,13 @@ applicable), `SizeFormatterSpec.swift` -> `HumanSizeSpec.swift`, plus a new
 this is a thin passthrough, not exhaustively re-tested the way
 `distanceInTime` is).
 
-Written by inspection per the sandbox limitation above; not yet confirmed on
-real hardware or tagged/pushed. `zouk` adoption (collapsing
-`ScanEntry.timeAgo`'s own hand-built two-tier split down to a direct call)
-is a deliberately separate follow-up, once this is confirmed.
+Written by inspection per the sandbox limitation above; confirmed for real
+on woodie's Mac -- `swift build`/`swift test` (45/45), `make test`
+(`swift test | xctidy`, grouped pass/fail tree, 45/45), and `make check`
+(`lint` + a silenced `swift test`) -- `PASS`. Not yet tagged/pushed. `zouk`
+adoption (collapsing `ScanEntry.timeAgo`'s own hand-built two-tier split
+down to a direct call) is a deliberately separate follow-up, once this is
+confirmed.
 
 ## Next up
 
