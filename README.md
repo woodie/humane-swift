@@ -13,14 +13,16 @@ Ruby and Go HTML templates that render once and can't refresh themselves.
 ```swift
 import Humane
 
-SizeFormatter.humanSize(225_935) // "226 KB"
+Humane.humanSize(225_935) // "226 KB"
 
-let now = Date(); let mtime = now.addingTimeInterval(-180)
-TimeFormatter.timeAgo(now, now) // "less than a minute ago"
-TimeFormatter.timeAgo(mtime, now) // "3 minutes ago"
+let mtime = Date().addingTimeInterval(-180)
+Humane.timeAgo(mtime) // "3 minutes ago" -- relative to the real clock
+
+let now = Date()
+Humane.distanceInTime(mtime, now) // "3 minutes ago" -- explicit relativeTo, for tests
 ```
 
-`SizeFormatter.humanSize` is a thin wrapper over `ByteCountFormatter` --
+`Humane.humanSize` is a thin wrapper over `ByteCountFormatter` --
 Foundation already gets this right for free, so there's no reason to
 duplicate its math the way `humane`/`humane-ruby` have to.
 
@@ -29,17 +31,27 @@ duplicate its math the way `humane`/`humane-ruby` have to.
 Add as a Swift Package Manager dependency:
 
 ```swift
-.package(url: "https://github.com/woodie/humane-swift.git", from: "0.9.0")
+.package(url: "https://github.com/woodie/humane-swift.git", from: "0.9.3")
 ```
 
-## `timeAgo` options
+## `distanceInTime` and `timeAgo`
 
-`timeAgo`'s recommended defaults already match ActionView's own
-`distance_of_time_in_words` defaults -- pass no options at all and you get
-them for free:
+Two entry points, same naming split as ActionView's own
+`distance_of_time_in_words`/`time_ago_in_words`:
+
+- **`distanceInTime(at, relativeTo, ...)`** -- the explicit, fully-tested
+  core. Takes both times, so it's what specs should call.
+- **`timeAgo(at, ...)`** -- a one-argument convenience for the common
+  "drop into a view" case. Supplies `Date()` as `relativeTo` internally;
+  everything else is identical to `distanceInTime`.
+
+Both share the same options and recommended defaults, already matching
+ActionView's own `distance_of_time_in_words` defaults -- pass none at all
+and you get them for free:
 
 ```swift
-TimeFormatter.timeAgo(at, relativeTo) // approximate: true, includeSeconds: false
+Humane.distanceInTime(at, relativeTo) // approximate: true, includeSeconds: false
+Humane.timeAgo(at)                    // same defaults, relativeTo is Date()
 ```
 
 - **`approximate`** (default `true`): prefixes `"about"`/`"in about"` on the
@@ -49,13 +61,13 @@ TimeFormatter.timeAgo(at, relativeTo) // approximate: true, includeSeconds: fals
 - **`includeSeconds`** (default `false`): under 30 seconds, collapses to
   `"less than a minute ago"`/`"in less than a minute"` instead of an exact
   second count. Matches ActionView's `include_seconds` default.
-- **`whenNil`** (default `""`): if `at` is `nil`, `timeAgo` returns this
+- **`whenNil`** (default `""`): if `at` is `nil`, both functions return this
   string without formatting -- for a scan, download, or other record that
   doesn't have a timestamp yet.
 
 ```swift
-TimeFormatter.timeAgo(at, relativeTo, approximate: false) // "15 hours ago", not "about 15 hours ago"
-TimeFormatter.timeAgo(nil, relativeTo, whenNil: "an unknown time") // "an unknown time"
+Humane.distanceInTime(at, relativeTo, approximate: false) // "15 hours ago", not "about 15 hours ago"
+Humane.timeAgo(nil, whenNil: "an unknown time") // "an unknown time"
 ```
 
 ## Scope

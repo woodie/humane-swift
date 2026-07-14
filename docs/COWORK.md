@@ -343,6 +343,56 @@ limitation" above). Confirmed for real via `swift test` on woodie's Mac --
 `docs/COMMENTS.md`) holding up under the signature change. Tagged, pushed,
 and released: https://github.com/woodie/humane-swift/releases/tag/v0.9.0.
 
+## `v0.9.3` (working, not yet finalized): one `Humane` enum, `distanceInTime`/`timeAgo` split
+
+Still converging on this one -- tagged as `0.9.3`, not `1.0.0`, on purpose.
+
+**`TimeFormatter`/`SizeFormatter` collapse into one `enum Humane`.** Static
+functions move directly onto it: `Humane.humanSize`, `Humane.distanceInTime`,
+`Humane.timeAgo`. `humane` (Go) already calls its functions directly off the
+`humane` package; `humane-ruby` picked up the equivalent flatten in the same
+session (`Humane.human_size`/`.distance_in_time`/`.time_ago` directly on the
+module) -- see each repo's own `docs/COWORK.md`. No `SizeFormatter`/
+`TimeFormatter` case-less-enum-as-namespace layer left once there was only
+one namespace worth having.
+
+**`.timeAgo` (the old two-argument static function) is renamed
+`.distanceInTime`.** A new one-argument `.timeAgo(at, ...)` takes its place,
+supplying `Date()` as `relativeTo` internally. Same naming split as
+ActionView's own `distance_of_time_in_words`/`time_ago_in_words` --
+deliberately borrowed, not invented, and not really a Foundation pattern:
+`RelativeDateTimeFormatter.localizedString(for:relativeTo:)` has no
+one-argument "now" convenience of its own. This is the one place in the
+family where the Rails-side naming pair, not Foundation, drives the shape --
+matches the "ActionView brings syntactic sugar to Swift's Foundation"
+framing this was designed around. The short names (`timeAgo`, `humanSize`)
+stay reserved for the "format a string for a view" contract; anything
+returning something richer than a string later (a countdown broken into
+components, say) gets a longer, explicit name instead of competing for the
+short one. `humane` (Go) and `humane-ruby` picked up the identical split in
+the same session (`DistanceInTime`/`TimeAgo`, `distance_in_time`/`time_ago`).
+
+Not invented from scratch -- `zouk`'s own `ScanEntry.timeAgo` (a zero-argument
+computed property wrapping `Date()`, sitting beside a `timeAgo(relativeTo:)`
+method for specs) already hand-built this exact two-tier split, because this
+package didn't offer it. See `humane`'s own `docs/COWORK.md` `v0.9.3` entry
+for the full cross-repo evidence (`lambada`'s template FuncMap did the same
+thing independently), summarized once there rather than three times.
+
+Test files renamed/reorganized to match: `TimeFormatterSpec.swift` ->
+`DistanceInTimeSpec.swift`, `TimeFormatterBoundarySpec.swift` ->
+`DistanceInTimeBoundarySpec.swift` (kept as its own file/`QuickSpec`
+subclass -- see the CI type-checker note in `docs/COMMENTS.md`, still
+applicable), `SizeFormatterSpec.swift` -> `HumanSizeSpec.swift`, plus a new
+`TimeAgoSpec.swift` covering the one-argument convenience (three cases --
+this is a thin passthrough, not exhaustively re-tested the way
+`distanceInTime` is).
+
+Written by inspection per the sandbox limitation above; not yet confirmed on
+real hardware or tagged/pushed. `zouk` adoption (collapsing
+`ScanEntry.timeAgo`'s own hand-built two-tier split down to a direct call)
+is a deliberately separate follow-up, once this is confirmed.
+
 ## Next up
 
 1. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in

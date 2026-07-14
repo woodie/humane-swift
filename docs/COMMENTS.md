@@ -7,7 +7,7 @@ one short line at any given spot -- anything longer that would previously
 have been a doc comment lives here instead. See `humane`/`humane-ruby`'s
 own `docs/COMMENTS.md` for the pattern this follows.
 
-## Tests/HumaneTests/TimeFormatterSpec.swift
+## Tests/HumaneTests/DistanceInTimeSpec.swift (formerly TimeFormatterSpec.swift, renamed in v0.9.3)
 
 ### Top-level structure
 Split into multiple sibling top-level `describe` calls instead of one
@@ -70,28 +70,29 @@ restructuring (regrouping describes, extracting lets, reducing assertions
 per `it`) wasn't going to fix this no matter how it was sliced, since every
 variant tried still put all of this content inside the same `describe`
 closure in the same file. Moved to its own file/QuickSpec subclass entirely
--- see `TimeFormatterBoundarySpec.swift` -- a stronger form of isolation
+-- see `DistanceInTimeBoundarySpec.swift` (formerly `TimeFormatterBoundarySpec.swift`,
+renamed in v0.9.3) -- a stronger form of isolation
 than another describe split. Also replaced the compound arithmetic
 (`44 * 60 + 29`) with precomputed integer literals (`-2669`, comment shows
 the derivation), removing another layer of inline expression complexity on
 top of the file split, since three prior guesses about which specific
 factor mattered had each turned out wrong on the real CI runner.
 
-## Sources/Humane/SizeFormatter.swift
+## Sources/Humane/Humane.swift (formerly SizeFormatter.swift + TimeFormatter.swift, merged in v0.9.3)
 
-### `SizeFormatter` (enum, static `humanSize`)
+### `Humane.humanSize` (formerly `SizeFormatter.humanSize`)
 `v0.9.0` drops the instantiated-formatter shape (`SizeFormatter().string(
 fromByteCount:)`) for a static function on a case-less enum used purely as
 a namespace -- see `docs/COWORK.md`'s `v0.9.0` entry for the full
-cross-repo rationale. The implementation itself is unchanged: still a
-one-line passthrough to `ByteCountFormatter`, still the authoritative
-reference `humane`/`humane-ruby`'s hand-rolled math is checked against,
-since Foundation already gets this right for free and there's no reason
-to duplicate it here the way those two languages have to.
+cross-repo rationale. `v0.9.3` collapses that enum (and `TimeFormatter`,
+below) into one `Humane` enum -- see `docs/COWORK.md`'s `v0.9.3` entry. The
+implementation itself is unchanged throughout: still a one-line passthrough
+to `ByteCountFormatter`, still the authoritative reference
+`humane`/`humane-ruby`'s hand-rolled math is checked against, since
+Foundation already gets this right for free and there's no reason to
+duplicate it here the way those two languages have to.
 
-## Sources/Humane/TimeFormatter.swift
-
-### `TimeFormatter` (enum, static `timeAgo`)
+### `Humane.distanceInTime` (formerly `TimeFormatter.timeAgo`, renamed in v0.9.3)
 `v0.9.0` drops the instantiated-formatter shape (`TimeFormatter(approximate:
 true).string(for:relativeTo:)`) for a static function on a case-less enum,
 matching the `SizeFormatter` change above and `humane`/`humane-ruby`'s
@@ -101,7 +102,12 @@ idiomatic casing for the shared concept (`timeAgo` here, `TimeAgo` in Go,
 from initializer parameters to call-site parameters; Swift's native
 default parameter values make this a plain signature change; no `TimeOptions`
 struct is needed the way Go's zero-value semantics required (see `humane`'s
-own `docs/COMMENTS.md`).
+own `docs/COMMENTS.md`). `v0.9.3` renames this function `distanceInTime` and
+adds a separate one-argument `Humane.timeAgo` convenience wrapping it with
+`Date()` -- see that entry below and `docs/COWORK.md`'s `v0.9.3` entry for
+why (the ActionView `distance_of_time_in_words`/`time_ago_in_words` naming
+pair). Everything in this entry and the ones below it describes behavior
+that now lives under `distanceInTime`, not `timeAgo`.
 
 ### `approximate` default flips `false` -> `true`
 Matches ActionView's own `distance_of_time_in_words` (which has no toggle
@@ -122,18 +128,19 @@ layer up in `ScanGridView` -- two guard points for one final string.
 `timeAgo` now takes the optional directly and a caller-supplied fallback
 string, collapsing both guard points into one call -- once `zouk` adopts
 this, `ScanEntry.timeAgo`'s wrapper can likely be removed entirely in
-favor of calling `Humane.TimeFormatter.timeAgo` straight from the view.
+favor of calling `Humane.timeAgo` straight from the view (`v0.9.3` renamed
+the qualifying type from `TimeFormatter` to `Humane` -- see above).
 The fallback text stays app-specific (an empty default, not a hardcoded
 string baked into this package), matching how `approximate`/
 `includeSeconds` are already opt-in rather than assumed.
 
-### `TimeFormatter.includeSeconds`
+### `distanceInTime`'s `includeSeconds` (formerly `TimeFormatter.includeSeconds`)
 Under 30 seconds (not 60), collapses to "less than a minute ago"/"in less
 than a minute" instead of counting seconds -- matching the first row of
 ActionView's `distance_of_time_in_words` bucket table (see `string`
 below), not an arbitrary round number.
 
-### `TimeFormatter.approximate`
+### `distanceInTime`'s `approximate` (formerly `TimeFormatter.approximate`)
 Prefixes "about"/"in about" onto exactly the hour-scale buckets (1 hour,
 and 2..24 hours) -- matching ActionView's `distance_of_time_in_words`
 wording for those buckets, and no others. An earlier version prefixed
@@ -150,7 +157,7 @@ hours") -- Foundation's own rounding doesn't jump buckets that early, so
 there was no "about"-eligible bucket text to surgery onto. See `string`
 below for what replaced it.
 
-### `TimeFormatter.timeAgo`
+### `distanceInTime`'s bucketing (formerly `TimeFormatter.timeAgo`)
 Buckets are chosen from `distanceInMinutes` (seconds/60, rounded once via
 `Double.rounded()`), not by re-dividing raw seconds independently per
 unit, and not by delegating to `RelativeDateTimeFormatter`'s own rounding
@@ -178,14 +185,21 @@ correction no longer applies.
 trio of labeled and positional overloads down to one static function with
 two positional parameters and three defaulted keyword options
 (`approximate:`, `includeSeconds:`, `whenNil:`) -- see the top-level
-`TimeFormatter` entry above. `for`/`at` existed specifically to bridge
-Swift's `RelativeDateTimeFormatter`-style label and the `at` every other
-language in the family was forced into (Ruby's `for` is a reserved word);
-once this package stopped mirroring `RelativeDateTimeFormatter`'s API
-shape at all, maintaining both spellings stopped earning its keep.
+`Humane.distanceInTime` entry above. `for`/`at` existed specifically to
+bridge Swift's `RelativeDateTimeFormatter`-style label and the `at` every
+other language in the family was forced into (Ruby's `for` is a reserved
+word); once this package stopped mirroring `RelativeDateTimeFormatter`'s
+API shape at all, maintaining both spellings stopped earning its keep.
 
-    timeAgo(t, t)                              == "less than a minute ago"
-    timeAgo(t.addingTimeInterval(-45), t)       == "1 minute ago"
-    timeAgo(t.addingTimeInterval(-15 * 3600), t) == "about 15 hours ago"
-    timeAgo(t.addingTimeInterval(-30 * 3600), t) == "1 day ago"  // no "about" -- ActionView's table has none on the day bucket
-    timeAgo(nil, t, whenNil: "an unknown time")  == "an unknown time"
+    distanceInTime(t, t)                               == "less than a minute ago"
+    distanceInTime(t.addingTimeInterval(-45), t)        == "1 minute ago"
+    distanceInTime(t.addingTimeInterval(-15 * 3600), t) == "about 15 hours ago"
+    distanceInTime(t.addingTimeInterval(-30 * 3600), t) == "1 day ago"  // no "about" -- ActionView's table has none on the day bucket
+    distanceInTime(nil, t, whenNil: "an unknown time")  == "an unknown time"
+
+### `Humane.timeAgo` (new in v0.9.3)
+A one-argument convenience over `distanceInTime`, supplying `Date()` as
+`relativeTo` -- see `docs/COWORK.md`'s `v0.9.3` entry for why (the
+ActionView `distance_of_time_in_words`/`time_ago_in_words` naming pair this
+mirrors). Thin passthrough, no bucketing logic of its own; `TimeAgoSpec.swift`
+covers it with three cases rather than re-testing everything above.
