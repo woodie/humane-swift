@@ -10,15 +10,20 @@ final class TimeAgoSpec: QuickSpec {
     override class func spec() {
         describe("Humane.timeAgo") {
             context("just now") {
+                var at: Date!
+                beforeEach { at = Date() }
+
                 it("displays less than a minute ago") {
-                    expect(Humane.timeAgo(Date())).to(equal("less than a minute ago"))
+                    expect(Humane.timeAgo(at)).to(equal("less than a minute ago"))
                 }
             }
 
             context("3 minutes ago") {
+                var at: Date!
+                beforeEach { at = Date().addingTimeInterval(-180) }
+
                 it("forwards to distanceInTime with Date() as relativeTo") {
-                    let when = Date().addingTimeInterval(-180)
-                    expect(Humane.timeAgo(when)).to(equal("3 minutes ago"))
+                    expect(Humane.timeAgo(at)).to(equal("3 minutes ago"))
                 }
             }
 

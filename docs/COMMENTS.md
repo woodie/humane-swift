@@ -78,6 +78,20 @@ the derivation), removing another layer of inline expression complexity on
 top of the file split, since three prior guesses about which specific
 factor mattered had each turned out wrong on the real CI runner.
 
+A later pass (matching `humane`/`humane-ruby`'s equivalent restructuring, and
+`~/workspace/woodie`'s own account-wide `docs/COWORK.md` "Test structure"
+convention -- a scenario should live in the enclosing context/`beforeEach`,
+never computed inline inside an `it`) split every `it` in both this file and
+`DistanceInTimeBoundarySpec.swift` into its own `context`, with a `beforeEach`
+setting a shared `at` in place of the old inline `base.addingTimeInterval(-N)`/
+`let when = ...` inside each `it` body. Total closure count roughly doubles
+(a `beforeEach` alongside each `it` instead of one combined closure), but
+per-closure expression complexity goes down, not up -- each closure now does
+strictly less than before (one assignment, or one assertion, never both) --
+so this shouldn't reintroduce the timeout described above, though it hasn't
+been confirmed on real CI yet (no Swift toolchain in the Cowork sandbox).
+Flag this entry if a fifth round turns out to be needed.
+
 ## Sources/Humane/Humane.swift (formerly SizeFormatter.swift + TimeFormatter.swift, merged in v0.9.3)
 
 ### `Humane.humanSize` (formerly `SizeFormatter.humanSize`)
