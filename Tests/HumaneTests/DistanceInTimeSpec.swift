@@ -13,15 +13,17 @@ final class DistanceInTimeSpec: QuickSpec {
         describe("Humane.distanceInTime with no options (the recommended defaults: approximate true, includeSeconds false)") {
             var base: Date!
             var at: Date!
+            var result: String!
             beforeEach {
                 base = ISO8601DateFormatter().date(from: "2026-07-08T12:00:00Z")
             }
+            justBeforeEach { result = Humane.distanceInTime(at, base) }
 
             context("just now") {
                 beforeEach { at = base }
 
                 it("displays less than a minute ago") {
-                    expect(Humane.distanceInTime(at, base)).to(equal("less than a minute ago"))
+                    expect(result).to(equal("less than a minute ago"))
                 }
             }
 
@@ -29,7 +31,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-45) }
 
                 it("rounds up to 1 minute ago (past the 30-second cutoff)") {
-                    expect(Humane.distanceInTime(at, base)).to(equal("1 minute ago"))
+                    expect(result).to(equal("1 minute ago"))
                 }
             }
 
@@ -37,7 +39,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-60) }
 
                 it("displays 1 minute ago, singular") {
-                    expect(Humane.distanceInTime(at, base)).to(equal("1 minute ago"))
+                    expect(result).to(equal("1 minute ago"))
                 }
             }
 
@@ -45,7 +47,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-180) }
 
                 it("displays 3 minutes ago") {
-                    expect(Humane.distanceInTime(at, base)).to(equal("3 minutes ago"))
+                    expect(result).to(equal("3 minutes ago"))
                 }
             }
 
@@ -53,7 +55,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-3600) }
 
                 it("displays about 1 hour ago") {
-                    expect(Humane.distanceInTime(at, base)).to(equal("about 1 hour ago"))
+                    expect(result).to(equal("about 1 hour ago"))
                 }
             }
 
@@ -61,7 +63,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-15 * 3600) }
 
                 it("displays about 15 hours ago") {
-                    expect(Humane.distanceInTime(at, base)).to(equal("about 15 hours ago"))
+                    expect(result).to(equal("about 15 hours ago"))
                 }
             }
 
@@ -69,7 +71,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-30 * 3600) }
 
                 it("rolls up to 1 day ago, with no about (ActionView's table has none on the day bucket)") {
-                    expect(Humane.distanceInTime(at, base)).to(equal("1 day ago"))
+                    expect(result).to(equal("1 day ago"))
                 }
             }
 
@@ -77,7 +79,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-3 * 86_400) }
 
                 it("displays 3 days ago") {
-                    expect(Humane.distanceInTime(at, base)).to(equal("3 days ago"))
+                    expect(result).to(equal("3 days ago"))
                 }
             }
 
@@ -85,7 +87,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(45) }
 
                 it("rounds up to in 1 minute (past the 30-second cutoff)") {
-                    expect(Humane.distanceInTime(at, base)).to(equal("in 1 minute"))
+                    expect(result).to(equal("in 1 minute"))
                 }
             }
 
@@ -93,7 +95,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(180) }
 
                 it("displays in 3 minutes") {
-                    expect(Humane.distanceInTime(at, base)).to(equal("in 3 minutes"))
+                    expect(result).to(equal("in 3 minutes"))
                 }
             }
 
@@ -101,7 +103,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(3 * 3600) }
 
                 it("displays in about 3 hours") {
-                    expect(Humane.distanceInTime(at, base)).to(equal("in about 3 hours"))
+                    expect(result).to(equal("in about 3 hours"))
                 }
             }
         }
@@ -109,15 +111,17 @@ final class DistanceInTimeSpec: QuickSpec {
         describe("Humane.distanceInTime with includeSeconds: true") {
             var base: Date!
             var at: Date!
+            var result: String!
             beforeEach {
                 base = ISO8601DateFormatter().date(from: "2026-07-08T12:00:00Z")
             }
+            justBeforeEach { result = Humane.distanceInTime(at, base, includeSeconds: true) }
 
             context("just now") {
                 beforeEach { at = base }
 
                 it("displays 0 seconds ago") {
-                    expect(Humane.distanceInTime(at, base, includeSeconds: true)).to(equal("0 seconds ago"))
+                    expect(result).to(equal("0 seconds ago"))
                 }
             }
 
@@ -125,7 +129,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-1) }
 
                 it("displays 1 second ago, singular") {
-                    expect(Humane.distanceInTime(at, base, includeSeconds: true)).to(equal("1 second ago"))
+                    expect(result).to(equal("1 second ago"))
                 }
             }
 
@@ -133,7 +137,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-45) }
 
                 it("displays 45 seconds ago") {
-                    expect(Humane.distanceInTime(at, base, includeSeconds: true)).to(equal("45 seconds ago"))
+                    expect(result).to(equal("45 seconds ago"))
                 }
             }
 
@@ -141,7 +145,7 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(45) }
 
                 it("displays in 45 seconds") {
-                    expect(Humane.distanceInTime(at, base, includeSeconds: true)).to(equal("in 45 seconds"))
+                    expect(result).to(equal("in 45 seconds"))
                 }
             }
         }
@@ -149,15 +153,17 @@ final class DistanceInTimeSpec: QuickSpec {
         describe("Humane.distanceInTime with approximate: false") {
             var base: Date!
             var at: Date!
+            var result: String!
             beforeEach {
                 base = ISO8601DateFormatter().date(from: "2026-07-08T12:00:00Z")
             }
+            justBeforeEach { result = Humane.distanceInTime(at, base, approximate: false) }
 
             context("1 hour ago") {
                 beforeEach { at = base.addingTimeInterval(-3600) }
 
                 it("displays the exact count, no about prefix") {
-                    expect(Humane.distanceInTime(at, base, approximate: false)).to(equal("1 hour ago"))
+                    expect(result).to(equal("1 hour ago"))
                 }
             }
 
@@ -165,27 +171,32 @@ final class DistanceInTimeSpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-15 * 3600) }
 
                 it("displays 15 hours ago") {
-                    expect(Humane.distanceInTime(at, base, approximate: false)).to(equal("15 hours ago"))
+                    expect(result).to(equal("15 hours ago"))
                 }
             }
         }
 
         describe("Humane.distanceInTime nil handling") {
             var base: Date!
+            var whenNil: String!
+            var result: String!
             beforeEach {
                 base = ISO8601DateFormatter().date(from: "2026-07-08T12:00:00Z")
+                whenNil = ""
             }
+            justBeforeEach { result = Humane.distanceInTime(nil, base, whenNil: whenNil) }
 
             context("when at is nil and whenNil is set") {
+                beforeEach { whenNil = "an unknown time" }
+
                 it("returns whenNil without formatting") {
-                    let result = Humane.distanceInTime(nil, base, whenNil: "an unknown time")
                     expect(result).to(equal("an unknown time"))
                 }
             }
 
             context("when at is nil and whenNil is left unset") {
                 it("returns an empty string") {
-                    expect(Humane.distanceInTime(nil, base)).to(equal(""))
+                    expect(result).to(equal(""))
                 }
             }
         }

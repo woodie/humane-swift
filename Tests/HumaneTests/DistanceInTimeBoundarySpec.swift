@@ -19,15 +19,16 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
         describe("Humane.distanceInTime at the approximate-distance bucket table boundaries, with approximate: false") {
             var base: Date!
             var at: Date!
+            var result: String!
             beforeEach {
                 base = ISO8601DateFormatter().date(from: "2026-07-08T12:00:00Z")
             }
+            justBeforeEach { result = Humane.distanceInTime(at, base, approximate: false) }
 
             context("29 seconds ago") {
                 beforeEach { at = base.addingTimeInterval(-29) }
 
                 it("stays less than a minute") {
-                    let result = Humane.distanceInTime(at, base, approximate: false)
                     expect(result).to(equal("less than a minute ago"))
                 }
             }
@@ -36,7 +37,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-30) }
 
                 it("rounds up to 1 minute") {
-                    let result = Humane.distanceInTime(at, base, approximate: false)
                     expect(result).to(equal("1 minute ago"))
                 }
             }
@@ -45,7 +45,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-89) }
 
                 it("stays 1 minute") {
-                    let result = Humane.distanceInTime(at, base, approximate: false)
                     expect(result).to(equal("1 minute ago"))
                 }
             }
@@ -54,7 +53,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-90) }
 
                 it("rounds up to 2 minutes") {
-                    let result = Humane.distanceInTime(at, base, approximate: false)
                     expect(result).to(equal("2 minutes ago"))
                 }
             }
@@ -64,7 +62,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-2669) }
 
                 it("stays 44 minutes") {
-                    let result = Humane.distanceInTime(at, base, approximate: false)
                     expect(result).to(equal("44 minutes ago"))
                 }
             }
@@ -74,7 +71,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-2670) }
 
                 it("rounds up to 1 hour") {
-                    let result = Humane.distanceInTime(at, base, approximate: false)
                     expect(result).to(equal("1 hour ago"))
                 }
             }
@@ -84,7 +80,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-5369) }
 
                 it("stays 1 hour") {
-                    let result = Humane.distanceInTime(at, base, approximate: false)
                     expect(result).to(equal("1 hour ago"))
                 }
             }
@@ -94,7 +89,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-5370) }
 
                 it("rounds up to 2 hours") {
-                    let result = Humane.distanceInTime(at, base, approximate: false)
                     expect(result).to(equal("2 hours ago"))
                 }
             }
@@ -104,7 +98,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-86369) }
 
                 it("stays 24 hours") {
-                    let result = Humane.distanceInTime(at, base, approximate: false)
                     expect(result).to(equal("24 hours ago"))
                 }
             }
@@ -114,7 +107,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-86370) }
 
                 it("rounds up to 1 day") {
-                    let result = Humane.distanceInTime(at, base, approximate: false)
                     expect(result).to(equal("1 day ago"))
                 }
             }
@@ -123,16 +115,17 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
         describe("Humane.distanceInTime at the approximate-distance bucket table boundaries, with no options (approximate true by default)") {
             var base: Date!
             var at: Date!
+            var result: String!
             beforeEach {
                 base = ISO8601DateFormatter().date(from: "2026-07-08T12:00:00Z")
             }
+            justBeforeEach { result = Humane.distanceInTime(at, base) }
 
             context("44 minutes 29 seconds ago") {
                 // 44 * 60 + 29
                 beforeEach { at = base.addingTimeInterval(-2669) }
 
                 it("has no about (still below the hour bucket)") {
-                    let result = Humane.distanceInTime(at, base)
                     expect(result).to(equal("44 minutes ago"))
                 }
             }
@@ -142,7 +135,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-2670) }
 
                 it("gains about (entering the hour bucket)") {
-                    let result = Humane.distanceInTime(at, base)
                     expect(result).to(equal("about 1 hour ago"))
                 }
             }
@@ -152,7 +144,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-86369) }
 
                 it("keeps about (still in the hour-scale buckets)") {
-                    let result = Humane.distanceInTime(at, base)
                     expect(result).to(equal("about 24 hours ago"))
                 }
             }
@@ -162,7 +153,6 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 beforeEach { at = base.addingTimeInterval(-86370) }
 
                 it("drops about (entering the day bucket)") {
-                    let result = Humane.distanceInTime(at, base)
                     expect(result).to(equal("1 day ago"))
                 }
             }

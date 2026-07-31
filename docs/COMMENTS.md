@@ -92,6 +92,21 @@ so this shouldn't reintroduce the timeout described above, though it hasn't
 been confirmed on real CI yet (no Swift toolchain in the Cowork sandbox).
 Flag this entry if a fifth round turns out to be needed.
 
+A later pass converted every `beforeEach`-computed `at`/`result` pair in this
+file, `DistanceInTimeBoundarySpec.swift`, and `TimeAgoSpec.swift` to Quick's
+native `justBeforeEach`, so the actual `Humane.distanceInTime`/`timeAgo` call
+happens once per spec after all `beforeEach`s at every nesting level, and
+each `it` body shrinks to a single `expect(result).to(equal(...))` -- no
+inline `Humane.distanceInTime(at, base, ...)` call left in any `it` at all.
+This mirrors `humane`'s (Go) `JustBeforeEach`/`humane-kotlin`'s
+`justBeforeEach` (via `kwick`) conversions of their own equivalent specs done
+in the same session, closing a three-way parity gap: Swift was the only one
+of the three still calling the function under test directly inline per `it`.
+Net effect for the CI-timeout history above is the same direction as the
+prior pass, only more so -- each `it` closure now does strictly *less* than
+even the single-assertion version, since the call itself moves to
+`justBeforeEach` and the `it` is left with only the `expect`.
+
 ## Sources/Humane/Humane.swift (formerly SizeFormatter.swift + TimeFormatter.swift, merged in v0.9.3)
 
 ### `Humane.humanSize` (formerly `SizeFormatter.humanSize`)

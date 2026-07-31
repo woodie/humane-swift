@@ -9,27 +9,36 @@ import Nimble
 final class TimeAgoSpec: QuickSpec {
     override class func spec() {
         describe("Humane.timeAgo") {
+            var at: Date!
+            var whenNil: String!
+            var result: String!
+            beforeEach { whenNil = "" }
+            justBeforeEach { result = Humane.timeAgo(at, whenNil: whenNil) }
+
             context("just now") {
-                var at: Date!
                 beforeEach { at = Date() }
 
                 it("displays less than a minute ago") {
-                    expect(Humane.timeAgo(at)).to(equal("less than a minute ago"))
+                    expect(result).to(equal("less than a minute ago"))
                 }
             }
 
             context("3 minutes ago") {
-                var at: Date!
                 beforeEach { at = Date().addingTimeInterval(-180) }
 
                 it("forwards to distanceInTime with Date() as relativeTo") {
-                    expect(Humane.timeAgo(at)).to(equal("3 minutes ago"))
+                    expect(result).to(equal("3 minutes ago"))
                 }
             }
 
             context("when at is nil") {
+                beforeEach {
+                    at = nil
+                    whenNil = "an unknown time"
+                }
+
                 it("returns whenNil without formatting") {
-                    expect(Humane.timeAgo(nil, whenNil: "an unknown time")).to(equal("an unknown time"))
+                    expect(result).to(equal("an unknown time"))
                 }
             }
         }
