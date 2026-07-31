@@ -59,6 +59,12 @@ final class HumanSizeSpec: QuickSpec {
                     expect(Humane.humanSize(5_240_000_000)).to(equal("5.24 GB"))
                 }
             }
+
+            context("with a value that lands on an exact unit") {
+                it("trims both trailing decimal digits") {
+                    expect(Humane.humanSize(2_000_000)).to(equal("2 MB"))
+                }
+            }
         }
     }
 }
