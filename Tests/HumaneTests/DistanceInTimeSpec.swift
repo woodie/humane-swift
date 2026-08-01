@@ -10,7 +10,7 @@ import Nimble
 // describes.
 final class DistanceInTimeSpec: QuickSpec {
     override class func spec() {
-        describe("Humane.distanceInTime with no options (the recommended defaults: approximate true, includeSeconds false)") {
+        describe("Humane.distanceInTime with no options") {
             var base: Date!
             var at: Date!
             var result: String!
@@ -70,7 +70,7 @@ final class DistanceInTimeSpec: QuickSpec {
             context("30 hours ago") {
                 beforeEach { at = base.addingTimeInterval(-30 * 3600) }
 
-                it("rolls up to 1 day ago, with no about (ActionView's table has none on the day bucket)") {
+                it("rolls up to 1 day ago, with no about") {
                     expect(result).to(equal("1 day ago"))
                 }
             }

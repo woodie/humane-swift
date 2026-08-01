@@ -13,7 +13,7 @@ lint:
 # grouped pass/fail tree via xctidy (github.com/woodie/xctidy), the Swift
 # equivalent of Go's `ginkgo-fd -r` / Ruby's `rspec -fd`.
 test:
-	swift test 2>&1 | xctidy
+	swift test 2>&1 | xctidy -fs
 
 # Terser than `test` on purpose: dots are a formatter freebie in ginkgo/rspec,
 # not something worth emulating here -- so this just suppresses output on

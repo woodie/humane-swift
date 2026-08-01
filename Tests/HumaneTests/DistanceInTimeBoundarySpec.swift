@@ -112,7 +112,7 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
             }
         }
 
-        describe("Humane.distanceInTime at the approximate-distance bucket table boundaries, with no options (approximate true by default)") {
+        describe("Humane.distanceInTime at the approximate-distance bucket table boundaries, with no options") {
             var base: Date!
             var at: Date!
             var result: String!
@@ -125,7 +125,7 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 // 44 * 60 + 29
                 beforeEach { at = base.addingTimeInterval(-2669) }
 
-                it("has no about (still below the hour bucket)") {
+                it("has no about") {
                     expect(result).to(equal("44 minutes ago"))
                 }
             }
@@ -134,7 +134,7 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 // 44 * 60 + 30
                 beforeEach { at = base.addingTimeInterval(-2670) }
 
-                it("gains about (entering the hour bucket)") {
+                it("gains about, entering the hour bucket") {
                     expect(result).to(equal("about 1 hour ago"))
                 }
             }
@@ -143,7 +143,7 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 // 23 * 3600 + 59 * 60 + 29
                 beforeEach { at = base.addingTimeInterval(-86369) }
 
-                it("keeps about (still in the hour-scale buckets)") {
+                it("keeps about") {
                     expect(result).to(equal("about 24 hours ago"))
                 }
             }
@@ -152,7 +152,7 @@ final class DistanceInTimeBoundarySpec: QuickSpec {
                 // 23 * 3600 + 59 * 60 + 30
                 beforeEach { at = base.addingTimeInterval(-86370) }
 
-                it("drops about (entering the day bucket)") {
+                it("drops about, entering the day bucket") {
                     expect(result).to(equal("1 day ago"))
                 }
             }
