@@ -1,415 +1,61 @@
 # Picking up humane-swift in a new Cowork session
 
-Context for whoever opens this repo cold, with none of the prior conversation history.
 Cross-project conventions (git locks, sandbox toolchain gaps, pushing, comments, code
 style, test structure) are in `~/workspace/woodie/docs/COWORK.md`.
 
 ## What this is
 
-The Swift sibling to `humane` (Go) and `humane-ruby`: `Humane.SizeFormatter` and
-`Humane.TimeFormatter`, matching their API shape (a configurable formatter type with a
-`string`-flavored method, not a bare helper function). `SizeFormatter` has no math to
-port -- `ByteCountFormatter` is already exactly right, since it's the reference
-implementation `humane`/`humane-ruby` were built to match in the first place, and stays
-a thin wrapper. `TimeFormatter` no longer is: once `approximate` needed to match
-ActionView's exact bucket table (44:30/89:30/etc. cutoffs, see `humane-ruby` issue #1),
-`RelativeDateTimeFormatter`'s own rounding stopped being close enough to build on top of
--- it doesn't jump buckets that early. `TimeFormatter` now computes `distanceInMinutes`
-and buckets by hand, the same way `humane`/`humane-ruby` do, rather than delegating to
-Foundation and string-surgering the result.
+The Swift sibling to `humane` (Go) and `humane-ruby`: same file-size/relative-date
+formatting, matching macOS Finder's `ByteCountFormatter`/`RelativeDateTimeFormatter`
+output plus an opt-in layer of ActionView-style vocabulary (`approximate`,
+`includeSeconds`) on top. One `enum Humane` namespaces `humanSize`, `distanceInTime`,
+and `timeAgo` (the last a one-argument convenience over `distanceInTime` supplying
+`Date()`).
 
-## Why this exists
+## Design decisions worth knowing
 
-`zouk`'s `ScanEntry.timeAgo` had been hand-rolling a manual clamp on top of
-`RelativeDateTimeFormatter` ("Emulate github.com/woodie/humane NewTimeFormatter
-CollapseMinute") since before this repo existed -- and it had drifted: the comment said
-it was emulating `humane`'s `CollapseMinute`, but used a 30-second threshold where
-`humane`'s actual default is 60. Exactly the kind of independent-hand-rolled-fix drift
-that `humane`/`humane-ruby` were created to eliminate for Go and Ruby, recurring a third
-time in Swift, in miniature.
+- **`humanSize` is a one-line `ByteCountFormatter` passthrough** -- no math to port,
+  since Foundation is already the reference implementation the other two languages'
+  hand-rolled rounding is built to match.
+- **`distanceInTime`'s bucketing is hand-rolled, not `RelativeDateTimeFormatter`-
+  derived.** `RelativeDateTimeFormatter`'s own rounding doesn't jump buckets early
+  enough to match ActionView's `distance_of_time_in_words` table (44:30 for "about 1
+  hour", 89:30 for "about 2 hours", etc.), so `Humane` computes `distanceInMinutes`
+  directly and buckets by hand instead of string-surgering Foundation's output.
+- **This package is the real-hardware reference for size-rounding**, not the other
+  way around -- `humane`/`humane-ruby`'s own `humanSize`/`human_size` math was
+  corrected to match findings from testing here (`"Zero KB"` for zero, spelled-out
+  `"bytes"` below 1000, GB-scale values carrying 2 decimals). Any future rounding fix
+  should start from a real `ByteCountFormatter` comparison here, then port to the
+  other languages -- not the reverse.
+- **CI-only Swift type-checker timeouts are a real, recurring risk** on dense Quick
+  spec files (see `xctidy`'s own `docs/COWORK.md` for the same note) -- a local
+  `swift test` pass does not guarantee CI's toolchain won't time out on the same
+  code. `DistanceInTimeBoundarySpec.swift` is kept as its own file/`QuickSpec`
+  subclass with precomputed integer literals for exactly this reason -- don't fold
+  it back into a shared file without re-confirming CI stays green.
 
-Separately, a real screenshot of `scandalous-web`'s scan listing (in the
-["Humane, or how I learned to stop worrying and love Foundation"](https://johnwoodell.medium.com/humane-or-how-i-learned-to-stop-worrying-and-love-foundation-25024c3cb4d2)
-writeup) showed ActionView's `"about 2 hours ago"` wording -- and for that
-static, server-rendered listing, the "about" qualifier is genuinely better than exact
-phrasing, precisely because the page can't refresh itself. That's the origin of
-`humane-ruby#1` ("Provide ActionView compatibility mode"), which asked for
-`distance_of_time_in_words`' full bucket table. The real need behind that issue isn't
-ActionView-wording compatibility (which would reintroduce the "developer manually
-prepends ago/in" burden `humane` was built to remove) -- it's that a consumer's ability
-to live-refresh, not its platform or language, determines how much rounding its
-display of relative time should tolerate. `zouk` itself can refresh live and doesn't
-need it; `scandalous-web` can't and does.
+## Testing
 
-Both of the above -- the drifted clamp and the "about" need -- got prototyped directly
-in `zouk`'s `ScanEntry.timeAgo` first (see its own git history), then extracted here
-once proven, the same sequence `humane`/`humane-ruby` went through relative to
-`lambada`/`scandalous`.
-
-## Naming
-
-`includeSeconds` and `approximate` are meant to read as a "marriage" of Foundation and
-ActionView vocabulary rather than new, invented concepts:
-
-- **`includeSeconds`** replaces what would otherwise be called `collapseMinute` (the
-  name used in `humane`/`humane-ruby` today). Reusing ActionView's own
-  `include_seconds` name isn't just borrowing a word -- the polarities actually line
-  up: `collapse_minute: true` (Ruby's default) suppresses seconds, identical in effect
-  to `include_seconds: false` (Rails' default). They're exact inverses of the same
-  concept, and the defaults invert to match, so `includeSeconds: false` here produces
-  byte-identical behavior to `CollapseMinute`/`collapse_minute`'s existing default --
-  this is a rename plus a default-value flip, not a new feature.
-- **`approximate`** doesn't have as clean a precedent -- ActionView has no toggle for
-  this at all (`distance_of_time_in_words` applies "about" unconditionally past its
-  hour-ish boundary), and no Foundation vocabulary was found for it either. It's the
-  one genuinely new term in this library rather than a borrowed one.
-
-`humane`/`humane-ruby` still use `CollapseMinute`/`collapse_minute` as of this writing.
-Renaming those to `IncludeSeconds`/`include_seconds` (with the accompanying default
-flip) is deliberately deferred until after this package ships -- see "Next up".
-
-- **`string(at:relativeTo:)`**: additive alias for `string(for:relativeTo:)`, added once
-  `humane`/`humane-ruby` picked up ActionView's `Approximate`/`approximate` and it became
-  clear this family is no longer a pure Swift port -- it's its own thing with Foundation
-  as the baseline, which made the one real naming mismatch between the three languages
-  worth closing. `at` is canonical because it's the only name Ruby can actually use
-  (`for` is a reserved word there); Swift keeps `for:` as its primary spelling since it
-  matches `RelativeDateTimeFormatter` and this package's whole point is feeling native to
-  Foundation. Go has no argument labels at all, so its side of this is just a parameter
-  rename in the signature (`at`, cosmetic-only) -- see `humane`'s own `docs/COWORK.md`.
-
-## Design decisions
-
-- **`SizeFormatter`**: a one-line passthrough to
-  `ByteCountFormatter.string(fromByteCount:countStyle:.file)`. No `allowedUnits`/
-  alternate `countStyle`s, matching the same "one style, the one anything here needs"
-  scoping `humane`/`humane-ruby` already settled on.
-- **`TimeFormatter`**: defaults (`includeSeconds: false, approximate: false`) match
-  `RelativeDateTimeFormatter`'s raw output exactly -- per "By default, humane matches
-  the Swift implementation," this type should require zero configuration to behave
-  identically to calling Foundation directly.
-- **`approximate`'s buckets, revised**: originally "about" kicked in on any bucket of an
-  hour or more (day-and-larger buckets inherited it for free once the delta crossed the
-  hour mark). Revised to match ActionView's `distance_of_time_in_words` table exactly
-  instead: "about" only decorates the 1-hour and 2..24-hour buckets, not the day bucket
-  -- ActionView's own table has no "about 1 day". See `humane-ruby` issue #1 and
-  `TimeFormatter.swift`'s doc comment for the full table (truncated at "1 day";
-  week/month/year buckets are out of scope).
-- **Bucketing is hand-rolled, not `RelativeDateTimeFormatter`-derived**: originally
-  `approximate` did string surgery -- prepending "about "/"in about " onto whatever
-  `RelativeDateTimeFormatter` returned, rather than recomputing the bucket text.
-  That stopped working once `approximate` needed ActionView's specific early cutoffs
-  (44:30 for "about 1 hour", 89:30 for "about 2 hours") -- Foundation's own rounding
-  doesn't jump buckets that early, so there was no "about"-eligible bucket text to
-  surgery onto in the first place. `TimeFormatter` now computes `distanceInMinutes`
-  and switches on it directly, the same shape `humane`/`humane-ruby` use, dropping the
-  `RelativeDateTimeFormatter` dependency for time formatting entirely.
-- **Zero-delta, no longer a Foundation workaround**: `RelativeDateTimeFormatter` used to
-  call an exact-zero delta `"in 0 seconds"` (future-tense) rather than `"0 seconds
-  ago"` -- discovered via a real `swift test` failure, not by inspection, and corrected
-  with an inline patch. Now that bucketing is hand-rolled and `future` is computed
-  directly (`date > referenceDate`, false when equal), zero is past-tense by
-  construction, matching `humane`/`humane-ruby`'s own approach
-  rather than exposing the inconsistency.
+Quick/Nimble, `justBeforeEach` over inline setup (matches the rest of the family).
+`TimeAgoSpec`/`DistanceInTimeSpec`/`DistanceInTimeBoundarySpec`/`HumanSizeSpec`.
 
 ## Sandbox limitation
 
-No Swift toolchain in the Cowork sandbox (confirmed: no `swift` binary) -- same
-situation as `humane`'s missing Go toolchain. Code here was written by inspection,
-then confirmed for real via `swift test` on woodie's Mac -- that run caught the
-zero-delta bug above and several wrong `SizeFormatter` fixture assumptions (see
-"Current state"), exactly the category of mistake this workflow exists to catch.
+No Swift toolchain here -- changes are written by inspection, verified via `swift
+build`/`swift test`/`make check` on the user's own Mac. Real CI runs (not just a
+local pass) are what caught the type-checker timeouts above -- treat a local-only
+green run as provisional for large spec files.
 
-## Current state
+## Current status
 
-`Package.swift` (macOS 13+, matching `zouk`'s own platform target), `Sources/Humane/`
-(`SizeFormatter`, `TimeFormatter`), `Tests/HumaneTests/` (Quick/Nimble specs), README,
-and a GitHub Actions `ci.yml`. Confirmed via `swift test` on real hardware -- 28/28
-passing (first run surfaced 5 failures, fixed in a follow-up commit; second run clean).
-Tagged `v0.1.0` locally; not yet pushed.
+`v0.9.3`, adopted by `zouk`.
 
-That real run surfaced a genuine finding: `ByteCountFormatter`'s actual output diverges
-from `humane`/`humane-ruby`'s hand-rolled 2-significant-digit algorithm in cases beyond
-the two fixtures (`225_935`, `500_000`) their `docs/COWORK.md` explicitly says were
-cross-checked against real hardware. Specifically: `0` bytes formats as `"Zero KB"`,
-not `"0 B"`; byte-scale values spell out `"bytes"`, not `"B"` (`"7 bytes"`, not `"7
-B"`); and GB-scale values can carry 2 decimal places, not 1 (`"5.24 GB"`, not `"5.2
-GB"`, for `5_240_000_000`). `SizeFormatter` here is a direct passthrough to
-`ByteCountFormatter`, so it's authoritative on these; `humane`/`humane-ruby`'s own
-math isn't exhaustively Foundation-accurate outside their originally-checked range,
-which undercuts their README's "corresponding functions in Swift will have consistent
-output" claim for these specific shapes of input.
+## Open items
 
-`zouk` has switched over: `Package.swift` depends on this repo via a local
-`.package(path: "../humane-swift")` (deliberately not a version pin yet, since
-`v0.1.0` isn't pushed), and `ScanEntry.humanSize`/`timeAgo(relativeTo:)` now call
-`Humane.SizeFormatter`/`Humane.TimeFormatter(approximate: true)` instead of their old
-hand-rolled versions -- see `zouk/docs/COWORK.md`, "adopted humane-swift" for that
-side. Confirmed via a real `make test` on woodie's Mac -- 46/46 `zouk` specs passing,
-including the 30-vs-60-second drift fix (no spec needed changing; nothing in the
-existing fixtures landed in that gap). Not exercised against a live `lambada`
-server -- woodie deliberately scoped this round to the automated suite, matching how
-`zouk`'s own `docs/COWORK.md` already treats a green `make test` as sufficient for
-most changes, reserving a live `make run` pass for cases that specifically call for
-it.
-
-`v0.1.0` is tagged, pushed, and released:
-[github.com/woodie/humane-swift/releases/tag/v0.1.0](https://github.com/woodie/humane-swift/releases/tag/v0.1.0)
-(via `gh release create v0.1.0 --title "v0.1.0" --notes-file docs/releases/v0.1.0.md`).
-`zouk`'s `Package.swift` is pinned to it (`from: "0.1.0"`, no more local `path:`),
-confirmed via a real `make build`/`make test` resolving the published package from
-GitHub -- 46/46 pass, same as the `path:` version. This library's adoption story is
-complete: scaffolded, tested, adopted by `zouk`, tagged, released, and re-confirmed
-against the real published artifact.
-
-`TimeFormatter` reworked to match ActionView's `distance_of_time_in_words` bucket table
-exactly (see `humane-ruby` issue #1), through the "1 day" row -- `include_seconds`'s
-collapse cutoff moved from 60s to 30s, and `approximate` narrowed from "any bucket >= 1
-hour" to exactly the hour-scale buckets (1 hour, 2..24 hours), since ActionView's table
-has no "about" on the day bucket. This required dropping `RelativeDateTimeFormatter` as
-the bucketing source (see "Design decisions" above) -- `TimeFormatter` now computes
-`distanceInMinutes` by hand, the same shape `humane`/`humane-ruby` use, both of which
-picked up the identical table change in the same session. Confirmed for real via
-`swift test` on woodie's Mac -- 35/35 passing, alongside `humane-ruby`'s (35/35) and
-`humane`'s (36/36) identical changes in the same session.
-
-`v0.3.0`: `TimeFormatter` gained `string(at:relativeTo:)` (additive alias for
-`string(for:relativeTo:)` -- see "Naming" above) and `string(_:_:)` (fully
-positional, no argument labels, matching `humane` (Go)'s label-free calling
-convention). `SizeFormatter` gained the equivalent `string(_:)` positional
-alias once a mocked-up three-language comparison surfaced it as the one
-method still keyword-only after `TimeFormatter` got its aliases. Every
-addition is a one-line forward to the existing implementation, not a
-separate one. `humane-ruby`'s `#string` on both formatters picked up
-equivalent positional-or-keyword support in the same session -- see
-`docs/releases/v0.3.0.md`.
-
-README also gained the `approximate: true` example (`"about 15 hours ago"`)
-that `humane`'s and `humane-ruby`'s READMEs already had -- this README's
-"Beyond Foundation's defaults" section listed the option but never showed it
-actually triggering "about". 15 hours matches the other two languages'
-existing example distance (already covered by real specs here); the
-top-of-README 3-minute example is untouched -- it's correct as-is, since
-ActionView's own table has no "about" below the hour bucket. The README also
-now states explicitly the principle that's been guiding all of the above:
-Foundation is the baseline every default matches exactly in all three
-languages; ActionView's vocabulary is a layer on top of that baseline,
-opt-in, never a replacement for it.
-
-Written by inspection in the sandbox, then confirmed for real via `swift
-test` on woodie's Mac -- 38/38 passing, including every alias/positional
-case added this session. Tagged, pushed, and **released**:
-[github.com/woodie/humane-swift/releases/tag/v0.3.0](https://github.com/woodie/humane-swift/releases/tag/v0.3.0)
-(via `gh release create v0.3.0 --title "v0.3.0" --notes-file
-docs/releases/v0.3.0.md`).
-
-**CI found broken separately from the local `swift test` pass above**:
-`ci.yml` (`swift build`/`swift test` on `macos-14`) has been red since the
-`v0.2.0` commit -- confirmed via the actual GitHub Actions log woodie
-pasted in, `error: the compiler is unable to type-check this expression in
-reasonable time`, pointed at `TimeFormatterSpec.swift`'s single outer
-`describe("TimeFormatter") { ... }` wrapping everything. Not a real test
-failure and not something introduced this session (`v0.2.0`'s own CI run
-is red too) -- a local `swift test` on a fast Mac can still pass while the
-CI runner's type checker times out on the same giant nested-closure
-expression. Fixed by splitting `TimeFormatterSpec` into multiple sibling
-top-level `describe`s -- see `docs/COMMENTS.md`. Confirmed via a real
-`swift test` on woodie's Mac -- 38/38 passing, same count and behavior as
-before the split.
-
-`ci.yml` briefly also gained `-Xswiftc -solver-expression-time-limit=600`
-as a margin of safety, added and reverted in the same session: it's a
-frontend-only flag, and passing it bare through `-Xswiftc` (instead of
-threaded as `-Xswiftc -Xfrontend -Xswiftc -solver-expression-time-limit=600`)
-produced `error: unknown argument: '-solver-expression-time-limit=600'` on
-CI's real Xcode 15.4/Swift 5.10 toolchain -- a genuine CI break introduced
-by this session's own fix attempt, caught via the real CI log, not the
-original type-checker problem. Removed rather than fixed, since the
-describe split is the real fix and doesn't need a compiler-flag hedge that
-can't be verified in this sandbox. `ci.yml` is back to plain `swift build
--v`/`swift test -v`.
-
-Pushing the flag revert got a second real CI log: the file-level split fixed
-every block except the boundary-table one, which timed out on its own,
-pointed at `describe("...bucket table boundaries")` specifically -- real
-progress (one block, not the whole file), and confirmation that this is
-genuinely a per-expression density problem, not something that clears up on
-its own from regrouping alone. That block's `it`s each packed a `Date`
-computation and two `expect(...).to(equal(...))` calls into one line.
-Fixed by doing what the compiler's own error suggests -- pulling each
-`Date` computation into a type-annotated `let` before the `expect` calls --
-and splitting its two `context`s into their own top-level `describe`s, same
-as the rest of the file. Same 7 `it` cases, same assertions.
-
-Round 2 still failed on CI -- a third real log, same two describes, both
-still "unable to type-check." The remaining common thread: those were the
-only blocks in the file where one `it` made two back-to-back
-`expect(formatter.string(...)).to(equal(...))` calls; everywhere else in
-the file already has one assertion per `it`. `TimeFormatter.string` also
-picked up two new overloads this session (`at:relativeTo:`, `_:_:`), so
-each such call now resolves against three candidates inside Nimble's
-generic `equal` -- plausible trigger, twice per closure, for exactly the
-two blocks that do it twice. Round 3: resolve each `.string(...)` call to a
-type-annotated `let result: String` before `expect` sees it, and split
-every two-assertion `it` into two one-assertion `it`s. 14 `it` cases now
-(was 7) -- more granular, same coverage.
-
-Round 3 also failed on CI, on the exact same two describes, at the exact
-same line numbers -- a fourth real CI log. That's the actual signal: three
-different within-file restructurings (describe grouping, let extraction,
-assertion count) each failed on identical content, which means the
-specific internal shape of these `it`s was never the variable that
-mattered -- everything tried still lived inside the same `describe`
-closure in the same file. Round 4: moved both describes into their own
-new file, `TimeFormatterBoundarySpec.swift`, as a separate `QuickSpec`
-subclass -- real isolation instead of another in-file split. Also swapped
-the compound arithmetic (`44 * 60 + 29`) for precomputed integer literals
-(`-2669`, with a comment showing the derivation), since three wrong
-guesses in a row about the specific trigger warranted removing every
-plausible source of complexity at once rather than one at a time.
-
-**Round 4 confirmed green on the actual CI runner** -- the fifth real CI
-log, and the first clean one since `v0.2.0`. `TimeFormatterSpec.swift` and
-the new `TimeFormatterBoundarySpec.swift` both build and pass on CI's real
-Xcode 15.4/Swift 5.10, not just on woodie's Mac. CI is fixed.
-
-In hindsight, rounds 1-3 weren't wasted even though each individually
-failed: round 1 (file-level describe split) cleared every block except the
-boundary one, and rounds 2-3 (Date/String `let` extraction, one assertion
-per `it`) each ruled out a plausible cause without fixing it -- narrowing
-what round 4's actual fix (a separate compilation unit, plus removing the
-compound arithmetic) needed to address. Four consecutive real CI logs, not
-guesses validated only by a local pass, is what made each round's next
-guess better-informed than the last.
-
-README's Install snippet still pinned `from: "0.1.0"` after `v0.3.0` shipped --
-stale (SPM's `from:` resolves forward so nothing was actually broken for
-consumers, but the snippet read as if the package hadn't moved since its
-first release). Bumped to `from: "0.3.0"`. Checked the rest of both this
-README and `humane-ruby`'s for the same "compound arithmetic obscures the
-numeral" issue the `humane` (Go) README's `-3*time.Minute` -> `-180*time.Second`
-fix addressed -- both READMEs' top-of-file comparison examples already use
-bare `180`/`-180`, so no issue there. The `approximate: true` example further
-down (`Date().addingTimeInterval(-15 * 3600)` here, `t - 15 * 3600` in Ruby)
-still uses `15 * 3600`, but left as-is: it's a per-language feature demo, not
-part of the cross-language numeral comparison, and `15 * 3600` is a standard,
-transparent hours-to-seconds conversion rather than a language-specific
-constant like Go's `time.Minute` was.
-
-## `v0.9.0`: a full API rethink, informed by three real consumers
-
-Through `v0.3.0` this package existed to mirror `ByteCountFormatter`/
-`RelativeDateTimeFormatter`'s own API shape as closely as possible --
-instantiated formatters, `for:relativeTo:` matching Foundation's own
-argument labels. With three real consumers now shipped (`lambada`,
-`scandalous`, `zouk`) and this package the sole user of its own API
-(woodie), the goal shifted: `humane`/`humane-ruby` need to feel as simple
-to drop into a Ruby or Go HTML template as ActionView's own helpers,
-while staying consistent with each other and with this package -- a
-different bar than "mirror Foundation faithfully." See `humane`'s own
-`docs/COWORK.md` `v0.9.0` entry for the full cross-repo rationale,
-summarized here:
-
-- **`SizeFormatter()`/`TimeFormatter()` -> static `SizeFormatter.humanSize`/
-  `TimeFormatter.timeAgo`**, case-less enums used as namespaces, no
-  instantiation. `humane` (Go) and `humane-ruby` picked up the equivalent
-  change in the same session (package functions, class methods
-  respectively) -- each language keeps its own idiomatic casing for the
-  shared concept rather than one literal spelling.
-- **`SizeFormatter.humanSize` is unchanged internally** -- still a
-  one-line `ByteCountFormatter` passthrough. This package's own
-  real-hardware testing is what found the zero/byte-scale/GB-scale
-  divergences `humane`/`humane-ruby` needed to correct toward (see
-  "Current state" below) -- nothing here needed correcting, since
-  Foundation was the reference all along.
-- **`timeAgo`'s `approximate` default flips `false` -> `true`** -- matches
-  ActionView's own always-on-past-the-hour behavior, and matches what
-  `zouk`'s `ScanEntry.swift` already passed explicitly. `includeSeconds`
-  stays `false`, unchanged.
-- **`timeAgo` accepts `at: Date?`** plus a new `whenNil:` parameter,
-  returned as-is when `at` is `nil` -- lets `zouk`'s `ScanEntry.timeAgo`
-  collapse its own two-layer guard/fallback dance into one call once it
-  adopts this (see `docs/COMMENTS.md`).
-- **The `for:`/`at:`/positional overload trio collapsed to one
-  signature.** Those existed to bridge `RelativeDateTimeFormatter`'s own
-  argument label and the `at` every other language was forced into; once
-  this package stopped mirroring `RelativeDateTimeFormatter`'s shape at
-  all, maintaining three spellings of the same call stopped earning its
-  keep.
-
-Written by inspection -- no Swift toolchain in this sandbox (see "Sandbox
-limitation" above). Confirmed for real via `swift test` on woodie's Mac --
-42/42 passing, including the boundary spec's file-level isolation (see
-`docs/COMMENTS.md`) holding up under the signature change. Tagged, pushed,
-and released: https://github.com/woodie/humane-swift/releases/tag/v0.9.0.
-
-## `v0.9.3` (working, not yet finalized): one `Humane` enum, `distanceInTime`/`timeAgo` split
-
-Still converging on this one -- tagged as `0.9.3`, not `1.0.0`, on purpose.
-
-**`TimeFormatter`/`SizeFormatter` collapse into one `enum Humane`.** Static
-functions move directly onto it: `Humane.humanSize`, `Humane.distanceInTime`,
-`Humane.timeAgo`. `humane` (Go) already calls its functions directly off the
-`humane` package; `humane-ruby` picked up the equivalent flatten in the same
-session (`Humane.human_size`/`.distance_in_time`/`.time_ago` directly on the
-module) -- see each repo's own `docs/COWORK.md`. No `SizeFormatter`/
-`TimeFormatter` case-less-enum-as-namespace layer left once there was only
-one namespace worth having.
-
-**`.timeAgo` (the old two-argument static function) is renamed
-`.distanceInTime`.** A new one-argument `.timeAgo(at, ...)` takes its place,
-supplying `Date()` as `relativeTo` internally. Same naming split as
-ActionView's own `distance_of_time_in_words`/`time_ago_in_words` --
-deliberately borrowed, not invented, and not really a Foundation pattern:
-`RelativeDateTimeFormatter.localizedString(for:relativeTo:)` has no
-one-argument "now" convenience of its own. This is the one place in the
-family where the Rails-side naming pair, not Foundation, drives the shape --
-matches the "ActionView brings syntactic sugar to Swift's Foundation"
-framing this was designed around. The short names (`timeAgo`, `humanSize`)
-stay reserved for the "format a string for a view" contract; anything
-returning something richer than a string later (a countdown broken into
-components, say) gets a longer, explicit name instead of competing for the
-short one. `humane` (Go) and `humane-ruby` picked up the identical split in
-the same session (`DistanceInTime`/`TimeAgo`, `distance_in_time`/`time_ago`).
-
-Not invented from scratch -- `zouk`'s own `ScanEntry.timeAgo` (a zero-argument
-computed property wrapping `Date()`, sitting beside a `timeAgo(relativeTo:)`
-method for specs) already hand-built this exact two-tier split, because this
-package didn't offer it. See `humane`'s own `docs/COWORK.md` `v0.9.3` entry
-for the full cross-repo evidence (`lambada`'s template FuncMap did the same
-thing independently), summarized once there rather than three times.
-
-Test files renamed/reorganized to match: `TimeFormatterSpec.swift` ->
-`DistanceInTimeSpec.swift`, `TimeFormatterBoundarySpec.swift` ->
-`DistanceInTimeBoundarySpec.swift` (kept as its own file/`QuickSpec`
-subclass -- see the CI type-checker note in `docs/COMMENTS.md`, still
-applicable), `SizeFormatterSpec.swift` -> `HumanSizeSpec.swift`, plus a new
-`TimeAgoSpec.swift` covering the one-argument convenience (three cases --
-this is a thin passthrough, not exhaustively re-tested the way
-`distanceInTime` is).
-
-Written by inspection per the sandbox limitation above; confirmed for real
-on woodie's Mac -- `swift build`/`swift test` (45/45), `make test`
-(`swift test | xctidy`, grouped pass/fail tree, 45/45), and `make check`
-(`lint` + a silenced `swift test`) -- `PASS`. Not yet tagged/pushed. `zouk`
-adoption (collapsing `ScanEntry.timeAgo`'s own hand-built two-tier split
-down to a direct call) is a deliberately separate follow-up, once this is
-confirmed.
-
-## Next up
-
-1. `CollapseMinute`/`collapse_minute` -> `IncludeSeconds`/`include_seconds` in
-   `humane`/`humane-ruby`, and `approximate` backported to both -- both done,
-   nothing left open here.
-2. `humane`/`humane-ruby`'s `SizeFormatter` math has been corrected toward
-   `ByteCountFormatter` parity (`v0.9.0` each) using this
-   package's real-hardware findings as the reference. `humane-ruby#1`
-   ("Provide ActionView compatibility mode") can now be closed with a
-   pointer to `approximate` plus the parity fix as the actual answer to
-   what it was asking for.
-3. `zouk` adopted this API in its own `v1.11.0` -- `ScanEntry.timeAgo`
-   simplified down to a direct call, `whenNil:` absorbing what used to be
-   its own `guard let downloadedAt else { return nil }`. Signed, notarized,
-   released, and the `homebrew-zouk` cask auto-bumped via
-   `repository_dispatch` -- see `zouk`'s own `docs/COWORK.md`. Nothing left
-   open here.
+**Verify `humanSize` rounding against real `ByteCountFormatter` output across a
+wider range of magnitudes.** Only a handful of fixtures have been cross-checked on
+real hardware so far; the 3-significant-figure rule in use reproduces all of them,
+but is still an inference from a small set. `humane`/`humane-ruby`/`humane-kotlin`
+all inherit whatever's confirmed here. Tracked in a GitHub issue on this repo (draft
+handed off separately -- see chat).
