@@ -34,6 +34,12 @@ and `timeAgo` (the last a one-argument convenience over `distanceInTime` supplyi
   code. `DistanceInTimeBoundarySpec.swift` is kept as its own file/`QuickSpec`
   subclass with precomputed integer literals for exactly this reason -- don't fold
   it back into a shared file without re-confirming CI stays green.
+- **`whenNil` defaulting to `""` is the deliberate cross-language standard**, not
+  a coincidence three of the four repos happened to share -- a cross-repo test
+  comparison found `humane-ruby` alone defaulting `when_nil:` to `nil`, inherited
+  from ActionView's own helper conventions rather than required by Ruby. Fixed
+  there instead of changed here -- see `humane-ruby`'s own `docs/COWORK.md`
+  ("Brought `when_nil` to parity").
 
 ## Testing
 
