@@ -5,10 +5,9 @@
 [![Release](https://img.shields.io/github/v/release/woodie/humane-swift.svg)](https://github.com/woodie/humane-swift/releases/latest)
 [![License](https://img.shields.io/github/license/woodie/humane-swift.svg)](LICENSE)
 
-Human-readable file sizes and relative times for a live, refreshable Swift
-app -- consistent output with [`humane`](https://github.com/woodie/humane)
-(Go) and [`humane-ruby`](https://github.com/woodie/humane-ruby), which serve
-Ruby and Go HTML templates that render once and can't refresh themselves.
+File sizes that read exactly the way macOS Finder shows them (`"4.1 MB"`,
+`"226 KB"`), and relative dates in Rails ActionView's wording (`"about 3 hours
+ago"`, `"in 3 minutes"`), for Swift apps.
 
 ```swift
 import Humane
@@ -22,16 +21,26 @@ let now = Date()
 Humane.distanceInTime(mtime, now) // "3 minutes ago" -- explicit relativeTo, for tests
 ```
 
-`Humane.humanSize` is a thin wrapper over `ByteCountFormatter` --
-Foundation already gets this right for free, so there's no reason to
-duplicate its math the way `humane`/`humane-ruby` have to.
-
 ## Install
 
 Add as a Swift Package Manager dependency:
 
 ```swift
 .package(url: "https://github.com/woodie/humane-swift.git", from: "0.9.4")
+```
+
+## File sizes
+
+`Humane.humanSize` is a thin wrapper over Foundation's `ByteCountFormatter`
+(file style), so it matches Finder by construction: no decimals for KB, one
+for MB, two for GB and above, trailing zeros dropped, and rounding up into the
+next unit when it reaches 1000.
+
+```swift
+Humane.humanSize(2_579)         // "3 KB"
+Humane.humanSize(4_132_383)     // "4.1 MB"
+Humane.humanSize(999_999)       // "1 MB"
+Humane.humanSize(5_240_000_000) // "5.24 GB"
 ```
 
 ## `distanceInTime` and `timeAgo`
@@ -44,6 +53,10 @@ Two entry points, same naming split as ActionView's own
 - **`timeAgo(at, ...)`** -- a one-argument convenience for the common
   "drop into a view" case. Supplies `Date()` as `relativeTo` internally;
   everything else is identical to `distanceInTime`.
+
+The wording follows ActionView's `distance_of_time_in_words`, with one
+difference: direction is picked for you. A past time reads `"3 minutes ago"`
+and a future one `"in 3 minutes"`, where ActionView leaves that to the caller.
 
 Both share the same options and recommended defaults, already matching
 ActionView's own `distance_of_time_in_words` defaults -- pass none at all
