@@ -55,7 +55,7 @@ green run as provisional for large spec files.
 
 ## Current status
 
-`v0.9.3`, adopted by `zouk`.
+`v0.9.4`, adopted by `zouk`.
 
 ## Open items
 

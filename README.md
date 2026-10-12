@@ -31,7 +31,7 @@ duplicate its math the way `humane`/`humane-ruby` have to.
 Add as a Swift Package Manager dependency:
 
 ```swift
-.package(url: "https://github.com/woodie/humane-swift.git", from: "0.9.3")
+.package(url: "https://github.com/woodie/humane-swift.git", from: "0.9.4")
 ```
 
 ## `distanceInTime` and `timeAgo`
