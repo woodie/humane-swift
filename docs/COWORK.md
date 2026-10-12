@@ -59,9 +59,8 @@ green run as provisional for large spec files.
 
 ## Open items
 
-**Verify `humanSize` rounding against real `ByteCountFormatter` output across a
-wider range of magnitudes.** Only a handful of fixtures have been cross-checked on
-real hardware so far; the 3-significant-figure rule in use reproduces all of them,
-but is still an inference from a small set. `humane`/`humane-ruby`/`humane-kotlin`
-all inherit whatever's confirmed here. Tracked in a GitHub issue on this repo (draft
-handed off separately -- see chat).
+None. `humanSize` rounding was confirmed against real Finder output in
+`humane` issue #3: fixed decimal places per unit (KB 0, MB 1, GB and above 2),
+plus round-up into the next unit. `HumanSizeSpec` carries the same sizes as the
+other three suites, so this repo's CI checks the shared fixtures against the real
+`ByteCountFormatter`.
